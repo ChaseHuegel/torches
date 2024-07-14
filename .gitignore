@@ -1,0 +1,10 @@
+**/.vs/
+**/bin/
+**/obj/
+**/screenshots/
+**/config/
+**/nuget/
+
+gen
+
+*.log
