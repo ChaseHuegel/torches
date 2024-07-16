@@ -11,4 +11,9 @@
     <PackageReference Include="Samboy063.Tomlet" Version="5.3.1" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Library\Library.csproj" />
+    <ProjectReference Include="..\Packets\Packets.csproj" />
+  </ItemGroup>
+
 </Project>

@@ -1,0 +1,9 @@
+#version 1.0;
+#namespace Packets.Chat;
+
+message DirectMessage
+{
+    uint DestinationID;
+    uint SourceID;
+    string Value;
+}

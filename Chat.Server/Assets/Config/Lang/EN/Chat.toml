@@ -1,0 +1,11 @@
+"Language" = "en"
+
+[Translations]
+"Chat.Format"           = "{Channel:choose(0|1|2|3|4|5):{:L:Chat.Format.Whisper}|{:L:Chat.Format.Local}|{:L:Chat.Format.System}|{:L:Chat.Format.Global}|{:L:Chat.Format.Help}|{:L:Chat.Format.Trade}|{:L:Chat.Format.Default}}"
+"Chat.Format.Whisper"   = "{SourceID} whispers, \"{Value}\""
+"Chat.Format.Local"     = "{SourceID} says, \"{Value}\""
+"Chat.Format.System"    = "[System] {Value}"
+"Chat.Format.Global"    = "[Global] {SourceID} says, \"{Value}\""
+"Chat.Format.Help"      = "[Help] {SourceID} says, \"{Value}\""
+"Chat.Format.Trade"     = "[Trade] {SourceID} says, \"{Value}\""
+"Chat.Format.Default"   = "{SourceID} says, \"{Value}\""

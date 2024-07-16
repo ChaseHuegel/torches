@@ -1,0 +1,15 @@
+#version 1.0;
+#namespace Packets;
+
+message Packet
+{
+    PacketType Type;
+    byte[] Data;
+}
+
+enum PacketType
+{
+    Null                = 0;
+    BroadcastMessage    = 100;
+    DirectMessage       = 101;
+}
