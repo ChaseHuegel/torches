@@ -1,17 +1,19 @@
 
 using Library.Configuration.Localization;
+using Library.IO;
+using Swordfish.Library.IO;
 
 namespace Library.Configuration;
 
 public class ConfigurationProvider
 {
-    private const string ConfigDirectory = "Assets/Config";
-
+    private readonly IFileService _fileService;
     private Language[]? _languages;
 
-    public ConfigurationProvider()
+    public ConfigurationProvider(IFileService fileService)
     {
-        LoadLangFiles();
+        _fileService = fileService;
+        LoadLanguageDefinitions();
     }
 
     public IReadOnlyCollection<Language> GetLanguages()
@@ -19,18 +21,17 @@ public class ConfigurationProvider
         return _languages ?? [];
     }
 
-    private void LoadLangFiles()
+    private void LoadLanguageDefinitions()
     {
-        string[] langFiles = Directory.GetFiles($"{ConfigDirectory}/Lang", "*.toml", SearchOption.AllDirectories)
-            .Where(file => Path.GetExtension(file).Equals(".toml"))
-            .ToArray();
+        IPath[] langFiles = _fileService.GetFiles(Paths.Lang, SearchOption.AllDirectories);
 
         var languageDefinitions = new Language[langFiles.Length];
         for (int i = 0; i < langFiles.Length; i++)
         {
-            string? langFile = langFiles[i];
-            var content = File.ReadAllText(langFile);
-            languageDefinitions[i] = Language.FromString(content);
+            if (_fileService.TryParse(langFiles[i], out Language language))
+            {
+                languageDefinitions[i] = language;
+            }
         }
 
         _languages = languageDefinitions;
