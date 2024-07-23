@@ -1,9 +1,0 @@
-#version 1.0;
-#namespace Packets.Chat;
-
-message BroadcastMessage
-{
-    byte Channel;
-    uint SourceID;
-    string Value;
-}

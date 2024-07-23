@@ -10,6 +10,6 @@ message Packet
 enum PacketType
 {
     Null                = 0;
-    BroadcastMessage    = 100;
-    DirectMessage       = 101;
+    ChatMessage         = 100;
+    TextMessage         = 101;
 }

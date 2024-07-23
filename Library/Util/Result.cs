@@ -15,6 +15,7 @@ public readonly struct Result<T>(bool success, T value, string? message = null)
     public readonly T Value = value;
 
     public static implicit operator bool(Result<T> result) => result.Success;
+    public static implicit operator T(Result<T> result) => result.Value;
 
     public static Result<T> FromSuccess(T value, string? message = null) => new(true, value, message);
 

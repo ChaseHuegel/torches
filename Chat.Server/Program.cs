@@ -16,13 +16,13 @@ internal static class Program
         SetupContainer();
         SetupLocalization();
 
-        var application = Container.Resolve<Application>();
+        var application = Container.Resolve<ChatServer>();
         application.Run();
     }
 
     private static void SetupContainer()
     {
-        Container.Register<Application>(Reuse.Singleton);
+        Container.Register<ChatServer>(Reuse.Singleton);
 
         Container.Register<IFileService, FileService>(Reuse.Singleton);
         Container.Register<IFileParser, LanguageParser>(Reuse.Singleton);

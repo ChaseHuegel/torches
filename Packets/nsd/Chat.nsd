@@ -1,0 +1,25 @@
+#version 1.0;
+#namespace Packets.Chat;
+
+enum ChatChannel
+{
+    Whisper;
+    Local;
+    System;
+    Global;
+    Help;
+    Trade;
+}
+
+message ChatPacket
+{
+    ChatChannel Channel;
+    uint? DestinationID;
+    string Value;
+}
+
+message TextPacket
+{
+    ChatChannel Channel;
+    string Value;
+}

@@ -1,3 +1,4 @@
+using Library.Types;
 using Library.Util;
 
 namespace Networking;
@@ -35,6 +36,15 @@ public class SessionService
         lock (_sessionsLock)
         {
             bool exists = _sessions.ContainsKey(session.ID);
+            return new Result<Session>(exists, session);
+        }
+    }
+
+    public Result<Session> Get(uint value)
+    {
+        lock (_sessionsLock)
+        {
+            bool exists = _sessions.TryGetValue(value, out Session session);
             return new Result<Session>(exists, session);
         }
     }
