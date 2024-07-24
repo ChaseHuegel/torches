@@ -17,4 +17,8 @@
     <None Include="Assets\**\*.*" CopyToOutputDirectory="Always"/>
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Chat.Server.Tests" />
+  </ItemGroup>
+
 </Project>
