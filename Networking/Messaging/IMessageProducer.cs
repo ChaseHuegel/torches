@@ -1,13 +1,11 @@
-using Library.Collections;
+﻿using Library.Collections;
 using Library.Types;
 using Library.Util;
 
-namespace Networking;
+namespace Networking.Messaging;
 
-public interface ISender<T>
+public interface IMessageProducer<T>
 {
-    Result Send(T message);
-
     Result Send(T message, Session target);
 
     Result Send(T message, IFilter<Session> targetFilter);

@@ -9,7 +9,7 @@ message Packet
 
 enum PacketType
 {
-    Null                = 0;
-    ChatMessage         = 100;
-    TextMessage         = 101;
+    Null        = 0;
+    Chat        = 100;
+    Text        = 101;
 }

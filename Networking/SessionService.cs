@@ -7,7 +7,7 @@ public class SessionService
 {
     private uint _lastSessionID;
 
-    private readonly Dictionary<uint, Session> _sessions = new();
+    private readonly Dictionary<uint, Session> _sessions = [];
     private readonly object _sessionsLock = new();
 
     public Result<Session> RequestNew()
