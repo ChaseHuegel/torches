@@ -1,3 +1,4 @@
+using Chat.Server.Types;
 using Library.Collections;
 using Library.Types;
 using Library.Util;
@@ -10,13 +11,15 @@ namespace Chat.Server;
 
 public class ChatServer
 {
+    private readonly SmartFormatter _formatter;
     private readonly SessionService _sessionService;
     private readonly IMessageConsumer<ChatPacket> _chatConsumer;
     private readonly IMessageProducer<TextPacket> _textProducer;
     private readonly ILogger _logger;
 
-    public ChatServer(SessionService sessionService, IMessageConsumer<ChatPacket> chatConsumer, IMessageProducer<TextPacket> textProducer, ILogger logger)
+    public ChatServer(SmartFormatter formatter, SessionService sessionService, IMessageConsumer<ChatPacket> chatConsumer, IMessageProducer<TextPacket> textProducer, ILogger logger)
     {
+        _formatter = formatter;
         _sessionService = sessionService;
         _chatConsumer = chatConsumer;
         _textProducer = textProducer;
@@ -32,12 +35,12 @@ public class ChatServer
     private void OnNewChatPacket(object? sender, MessageEventArgs<ChatPacket> e)
     {
         ChatPacket chat = e.Message;
-        _logger.LogInformation("Recv chat on channel: {chat.Channel}, destinationID: {chat.DestinationID}, value: \"{chat.Value}\"", chat.Channel, chat.DestinationID, chat.Value);
+        _logger.LogInformation("Recv chat on channel: {Channel}, from: {Sender}, to: {DestinationID}, value: \"{Value}\"", chat.Channel, e.Sender, chat.DestinationID, chat.Value);
 
         Result<ChatPacket> sendResult = SendChat(chat, e.Sender);
         if (!sendResult)
         {
-            _logger.LogError("Failed to send a chat on channel: {chat.Channel}, from: {e.Sender}.\n{sendResult.Message}", chat.Channel, e.Sender, sendResult.Message);
+            _logger.LogError("Failed to send a chat on channel: {Channel}, from: {Sender}.\n{Message}", chat.Channel, e.Sender, sendResult.Message);
         }
     }
 
@@ -72,8 +75,9 @@ public class ChatServer
             return new Result<ChatPacket>(false, chat, $"Session does not exist for {nameof(ChatPacket.DestinationID)}: {chat.DestinationID}.");
         }
 
-        var messageToSender = new TextPacket(chat.Channel, Smart.Format("{:L:Chat.Format.Self}", chat, sender));
-        var messageToTarget = new TextPacket(chat.Channel, Smart.Format("{:L:Chat.Format.Other}", chat, sender));
+        var message = new ChatMessage((int)chat.Channel, sender, target, chat.Value);
+        var messageToSender = new TextPacket(chat.Channel, _formatter.Format("{:L:Chat.Format.Self}", message));
+        var messageToTarget = new TextPacket(chat.Channel, _formatter.Format("{:L:Chat.Format.Other}", message));
 
         Result sendToSender = _textProducer.Send(messageToSender, sender);
         Result sendToTarget = _textProducer.Send(messageToTarget, target);
@@ -87,8 +91,9 @@ public class ChatServer
 
     private Result<ChatPacket> ProcessLocalBroadcast(ChatPacket chat, Session sender)
     {
-        var messageToSender = new TextPacket(chat.Channel, Smart.Format("{:L:Chat.Format.Self}", chat, sender));
-        var messageToOthers = new TextPacket(chat.Channel, Smart.Format("{:L:Chat.Format.Other}", chat, sender));
+        var message = new ChatMessage((int)chat.Channel, sender, null, chat.Value);
+        var messageToSender = new TextPacket(chat.Channel, _formatter.Format("{:L:Chat.Format.Self}", message));
+        var messageToOthers = new TextPacket(chat.Channel, _formatter.Format("{:L:Chat.Format.Other}", message));
 
         Result sendToSender = _textProducer.Send(messageToSender, sender);
         //  TODO identify local targets
@@ -103,8 +108,9 @@ public class ChatServer
 
     private Result<ChatPacket> ProcessGlobalBroadcast(ChatPacket chat, Session sender)
     {
-        var messageToSender = new TextPacket(chat.Channel, Smart.Format("{:L:Chat.Format.Self}", chat, sender));
-        var messageToOthers = new TextPacket(chat.Channel, Smart.Format("{:L:Chat.Format.Other}", chat, sender));
+        var message = new ChatMessage((int)chat.Channel, sender, null, chat.Value);
+        var messageToSender = new TextPacket(chat.Channel, _formatter.Format("{:L:Chat.Format.Self}", message));
+        var messageToOthers = new TextPacket(chat.Channel, _formatter.Format("{:L:Chat.Format.Other}", message));
 
         Result sendToSender = _textProducer.Send(messageToSender, sender);
         Result sendToOthers = _textProducer.Send(messageToOthers, new Except<Session>(sender));

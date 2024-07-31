@@ -10,6 +10,7 @@ using Packets.Chat;
 
 namespace Networking.Services;
 
+//  TODO make this a proper service instead of hardcoded test stuff
 public class LengthDelimitedTcpService : IDataReceiver, IDataSender
 {
     public event EventHandler<DataEventArgs>? Received;
@@ -100,7 +101,7 @@ public class LengthDelimitedTcpService : IDataReceiver, IDataSender
 
                 if (dataBufferOffset >= lengthToRead)
                 {
-                    byte[] data = dataBuffer[..lengthToRead];
+                    byte[] data = dataBuffer[4..lengthToRead];
 
                     Array.Copy(dataBuffer, lengthToRead, dataBuffer, 0, dataBuffer.Length - lengthToRead);
                     dataBufferOffset -= lengthToRead;

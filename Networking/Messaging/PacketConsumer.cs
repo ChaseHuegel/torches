@@ -13,7 +13,8 @@ public class PacketConsumer<T> : MessageConsumer<T>, IDisposable
     protected override void OnDataReceived(object? sender, DataEventArgs e)
     {
         Packet packet = Packet.Deserialize(e.Data, 0, e.Data.Length);
-        if (packet.Type != ((IPacketSerializer<T>)_serializer).PacketType)
+        IPacketSerializer<T> serializer = (IPacketSerializer<T>)_serializer;
+        if (packet.Type != serializer.PacketType)
         {
             return;
         }

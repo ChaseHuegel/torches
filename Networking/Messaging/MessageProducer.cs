@@ -13,8 +13,6 @@ public class MessageProducer<T> : IMessageProducer<T>, IDisposable
     private IDataSender[] _senders;
     private bool _disposed;
 
-    public event EventHandler<MessageEventArgs<T>>? NewMessage;
-
     public MessageProducer(ISerializer<T> serializer, IDataSender[] senders)
     {
         List<IDataSender> matchingSenders = [];

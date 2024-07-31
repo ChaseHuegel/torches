@@ -1,8 +1,10 @@
-﻿using Chat.Server;
+﻿using System.Xml.Schema;
+using Chat.Server;
 using Library.Configuration;
 using Library.Configuration.Localization;
 using Library.IO;
 using Library.Serialization;
+using Library.Util;
 using Networking;
 using Networking.LowLevel;
 using Networking.Messaging;
@@ -13,82 +15,80 @@ using SmartFormat.Core.Extensions;
 using SmartFormat.Utilities;
 using Swordfish.Library.IO;
 
-internal static class Program
+internal class Program
 {
-    private static Container Container { get; } = new();
+    private static readonly Container _container = new();
+    private static readonly ILoggerFactory _loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
+    private static readonly ILogger _logger;
 
-    private static ILoggerFactory _loggerFactory { get; } = LoggerFactory.Create(builder => builder.AddConsole());
-    private static ILogger CreateLogger(Request request)
+    static Program()
     {
-        return _loggerFactory.CreateLogger(request.Parent.ImplementationType);
+        _logger = CreateLogger<Program>();
     }
 
     private static async Task Main(string[] args)
     {
         SetupContainer();
-        SetupLocalization();
 
-        var application = Container.Resolve<Application>();
+        var application = _container.Resolve<Application>();
         await application.Run();
 
-        Container.Dispose();
+        _container.Dispose();
     }
 
     private static void SetupContainer()
     {
-        Container.RegisterMany<LengthDelimitedTcpService>(Reuse.Singleton);
-        Container.Register<IParser, DirectParser>(Reuse.Singleton);
-        Container.Register<IDataProducer, DataProducer>(setup: Setup.With(trackDisposableTransient: true), made: Parameters.Of.Type<IParser>().Type<IDataReceiver[]>());
+        _container.RegisterMany<LengthDelimitedTcpService>(Reuse.Singleton);
+        _container.Register<IParser, DirectParser>(Reuse.Singleton);
+        _container.Register<IDataProducer, DataProducer>(setup: Setup.With(trackDisposableTransient: true), made: Parameters.Of.Type<IParser>().Type<IDataReceiver[]>());
 
-        Container.RegisterMany<ChatPacketSerializer>(Reuse.Singleton);
-        Container.Register<IMessageConsumer<ChatPacket>, PacketConsumer<ChatPacket>>(Reuse.Singleton, setup: Setup.With(trackDisposableTransient: true));
-        Container.Register<IMessageProducer<ChatPacket>, MessageProducer<ChatPacket>>(Reuse.Singleton, setup: Setup.With(trackDisposableTransient: true));
+        _container.RegisterMany<ChatPacketSerializer>(Reuse.Singleton);
+        _container.Register<IMessageConsumer<ChatPacket>, PacketConsumer<ChatPacket>>(Reuse.Singleton, setup: Setup.With(trackDisposableTransient: true));
+        _container.Register<IMessageProducer<ChatPacket>, MessageProducer<ChatPacket>>(Reuse.Singleton, setup: Setup.With(trackDisposableTransient: true));
 
-        Container.RegisterMany<TextPacketSerializer>(Reuse.Singleton);
-        Container.Register<IMessageConsumer<TextPacket>, PacketConsumer<TextPacket>>(Reuse.Singleton, setup: Setup.With(trackDisposableTransient: true));
-        Container.Register<IMessageProducer<TextPacket>, MessageProducer<TextPacket>>(Reuse.Singleton, setup: Setup.With(trackDisposableTransient: true));
+        _container.RegisterMany<TextPacketSerializer>(Reuse.Singleton);
+        _container.Register<IMessageConsumer<TextPacket>, PacketConsumer<TextPacket>>(Reuse.Singleton, setup: Setup.With(trackDisposableTransient: true));
+        _container.Register<IMessageProducer<TextPacket>, MessageProducer<TextPacket>>(Reuse.Singleton, setup: Setup.With(trackDisposableTransient: true));
 
-        Container.Register<Application>(Reuse.Singleton);
-        Container.Register<ChatServer>(Reuse.Singleton);
+        _container.Register<Application>(Reuse.Singleton);
+        _container.Register<ChatServer>(Reuse.Singleton);
 
-        Container.Register<ILogger>(Made.Of(() => CreateLogger(Arg.Index<Request>(0)), request => request));
+        _container.Register<ILogger>(Made.Of(() => CreateLogger(Arg.Index<Request>(0)), request => request));
 
-        Container.Register<IFileService, FileService>(Reuse.Singleton);
-        Container.Register<IFileParser, LanguageParser>(Reuse.Singleton);
-        Container.Register<ConfigurationProvider>(Reuse.Singleton);
+        _container.Register<IFileService, FileService>(Reuse.Singleton);
+        _container.Register<IFileParser, LanguageParser>(Reuse.Singleton);
+        _container.Register<ConfigurationProvider>(Reuse.Singleton);
 
-        Container.Register<ILocalizationProvider, LocalizationService>(Reuse.Singleton);
-        Container.Register<IFormatter, LocalizationFormatter>();
-        Container.RegisterDelegate<IReadOnlyCollection<Language>>(static () => Container.Resolve<ConfigurationProvider>().GetLanguages());
+        _container.RegisterDelegate<SmartFormatter>(SmartFormatterProvider.Resolve);
+        _container.Register<ILocalizationProvider, LocalizationService>(Reuse.Singleton);
+        _container.Register<IFormatter, LocalizationFormatter>(Reuse.Singleton);
+        _container.RegisterDelegate<IReadOnlyCollection<Language>>(static () => _container.Resolve<ConfigurationProvider>().GetLanguages());
 
-        Container.Register<SessionService>(Reuse.Singleton);
+        _container.Register<SessionService>(Reuse.Singleton);
 
-        try
+        KeyValuePair<ServiceInfo, ContainerException>[] errors = _container.Validate();
+        if (errors.Length > 0)
         {
-            Container.ValidateAndThrow();
-        }
-        catch (ContainerException ex)
-        {
-            foreach (ContainerException? collectedException in ex.CollectedExceptions)
+            foreach (KeyValuePair<ServiceInfo, ContainerException> error in errors)
             {
-                Console.WriteLine("Exception: " + collectedException + "\n");
+                _logger.LogError(error.Value, "There was an error validating a container (service: {service}).", error.Key);
             }
             Environment.Exit(1);
         }
     }
 
-    private static void SetupLocalization()
+    private static ILogger CreateLogger(Request request)
     {
-        Smart.Default.Settings.Localization.LocalizationProvider = Container.Resolve<ILocalizationProvider>();
+        return _loggerFactory.CreateLogger(request.Parent.ImplementationType);
+    }
 
-        foreach (var formatter in Container.ResolveMany<IFormatter>())
-        {
-            Smart.Default.AddExtensions(formatter);
-        }
+    public static ILogger CreateLogger<T>()
+    {
+        return _loggerFactory.CreateLogger<T>();
+    }
 
-        foreach (var source in Container.ResolveMany<ISource>())
-        {
-            Smart.Default.AddExtensions(source);
-        }
+    public static ILogger CreateLogger(Type type)
+    {
+        return _loggerFactory.CreateLogger(type);
     }
 }

@@ -14,16 +14,21 @@ public class Application
         _chatServer = chatServer;
         _tcpService = tcpService;
         _logger = logger;
+        AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
     }
 
     public async Task Run()
     {
-        _logger.LogInformation("Starting services.");
         _chatServer.Start();
         _tcpService.Start(new IPEndPoint(IPAddress.Loopback, 1234));
-        _logger.LogInformation("Services started.");
+        _logger.LogInformation("Server started.");
 
-        await Task.Delay(5000);
+        await Task.Delay(1000);
         _logger.LogInformation("Closing server.");
+    }
+
+    private void OnUnhandledException(object sender, UnhandledExceptionEventArgs e)
+    {
+        _logger.LogError((Exception)e.ExceptionObject, "Unhandled exception.");
     }
 }
