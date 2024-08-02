@@ -2,11 +2,7 @@ using Library.Util;
 
 namespace Library.Events;
 
-public interface IEventProcessor
-{
-}
-
-public interface IEventProcessor<T> : IEventProcessor
+public interface IEventProcessor<T>
 {
     Result<EventBehavior> ProcessEvent(object? sender, T e);
 }

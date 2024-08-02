@@ -130,7 +130,7 @@ internal class Program
     {
         foreach (Type type in assembly.GetTypes())
         {
-            if (type.GetInterface(typeof(IEventProcessor).FullName!) == null)
+            if (!type.GetInterfaces().Any(x => x.IsGenericType && x.GetGenericTypeDefinition() == typeof(IEventProcessor<>)))
             {
                 continue;
             }
