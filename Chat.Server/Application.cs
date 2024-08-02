@@ -1,29 +1,35 @@
 using System.Net;
+using Chat.Server.Processors;
 using Networking.Services;
 
 namespace Chat.Server;
 
 public class Application
 {
-    private readonly ChatServer _chatServer;
-    private readonly LengthDelimitedTcpService _tcpService;
     private readonly ILogger _logger;
+    private readonly LengthDelimitedTcpService _tcpService;
+    private readonly IMessageEventProcessor[] _messageEventProcessors;
 
-    public Application(ChatServer chatServer, LengthDelimitedTcpService tcpService, ILogger logger)
+    public Application(ILogger logger, LengthDelimitedTcpService tcpService, IMessageEventProcessor[] messageEventProcessors)
     {
-        _chatServer = chatServer;
-        _tcpService = tcpService;
         _logger = logger;
+        _tcpService = tcpService;
+        _messageEventProcessors = messageEventProcessors;
         AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
     }
 
     public async Task Run()
     {
-        _chatServer.Start();
         _tcpService.Start(new IPEndPoint(IPAddress.Loopback, 1234));
-        _logger.LogInformation("Server started.");
+        _logger.LogInformation("TCP service started.");
 
-        await Task.Delay(1000);
+        foreach (IMessageEventProcessor processor in _messageEventProcessors)
+        {
+            processor.Start();
+        }
+        _logger.LogInformation("Started {count} message processors.", _messageEventProcessors.Length);
+
+        await Task.Delay(2000);
         _logger.LogInformation("Closing server.");
     }
 

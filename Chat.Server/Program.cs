@@ -1,7 +1,10 @@
-﻿using System.Xml.Schema;
+﻿using System.Reflection;
+using System.Xml.Schema;
 using Chat.Server;
+using Chat.Server.Processors;
 using Library.Configuration;
 using Library.Configuration.Localization;
+using Library.Events;
 using Library.IO;
 using Library.Serialization;
 using Library.Util;
@@ -46,12 +49,14 @@ internal class Program
         _container.Register<IMessageConsumer<ChatPacket>, PacketConsumer<ChatPacket>>(Reuse.Singleton, setup: Setup.With(trackDisposableTransient: true));
         _container.Register<IMessageProducer<ChatPacket>, MessageProducer<ChatPacket>>(Reuse.Singleton, setup: Setup.With(trackDisposableTransient: true));
 
+        _container.Register<IMessageEventProcessor, MessageEventProcessor<ChatPacket>>(Reuse.Singleton, ifAlreadyRegistered: IfAlreadyRegistered.AppendNewImplementation);
+        RegisterEventProcessors(Assembly.GetAssembly(typeof(Application))!, _container);
+
         _container.RegisterMany<TextPacketSerializer>(Reuse.Singleton);
         _container.Register<IMessageConsumer<TextPacket>, PacketConsumer<TextPacket>>(Reuse.Singleton, setup: Setup.With(trackDisposableTransient: true));
         _container.Register<IMessageProducer<TextPacket>, MessageProducer<TextPacket>>(Reuse.Singleton, setup: Setup.With(trackDisposableTransient: true));
 
         _container.Register<Application>(Reuse.Singleton);
-        _container.Register<ChatServer>(Reuse.Singleton);
 
         _container.Register<ILogger>(Made.Of(() => CreateLogger(Arg.Index<Request>(0)), request => request));
 
@@ -74,6 +79,24 @@ internal class Program
                 _logger.LogError(error.Value, "There was an error validating a container (service: {service}).", error.Key);
             }
             Environment.Exit(1);
+        }
+    }
+
+    private static void RegisterEventProcessors(Assembly assembly, Container container)
+    {
+        foreach (var type in assembly.GetTypes())
+        {
+            if (!type.IsClass)
+            {
+                continue;
+            }
+
+            if (type.GetInterface(typeof(IEventProcessor).FullName!) == null)
+            {
+                continue;
+            }
+
+            container.RegisterMany(serviceTypes: type.GetInterfaces(), implType: type, reuse: Reuse.Singleton, ifAlreadyRegistered: IfAlreadyRegistered.AppendNewImplementation);
         }
     }
 

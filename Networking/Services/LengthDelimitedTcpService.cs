@@ -49,9 +49,9 @@ public class LengthDelimitedTcpService : IDataReceiver, IDataSender
         NetworkStream stream = client.GetStream();
 
         Packet[] packets = [
-            new(PacketType.Chat, new ChatPacket(ChatChannel.Local, 0, "The quick").Serialize()),
-            new(PacketType.Chat, new ChatPacket(ChatChannel.Global, 0, "brown fox jumped").Serialize()),
-            new(PacketType.Chat, new ChatPacket(ChatChannel.Help, 0, "over the fence.").Serialize()),
+            new(PacketType.Chat, new ChatPacket(1, ChatChannel.Local, 0, "The quick").Serialize()),
+            new(PacketType.Chat, new ChatPacket(1, ChatChannel.Global, 0, "brown fox jumped").Serialize()),
+            new(PacketType.Chat, new ChatPacket(1, ChatChannel.Help, 0, "over the fence.").Serialize()),
         ];
 
         foreach (Packet packet in packets)

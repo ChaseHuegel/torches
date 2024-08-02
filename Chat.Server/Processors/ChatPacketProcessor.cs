@@ -1,5 +1,6 @@
 using Chat.Server.Types;
 using Library.Collections;
+using Library.Events;
 using Library.Types;
 using Library.Util;
 using Networking;
@@ -7,62 +8,57 @@ using Networking.Events;
 using Networking.Messaging;
 using Packets.Chat;
 
-namespace Chat.Server;
+namespace Chat.Server.Processors;
 
-public class ChatServer
+public class ChatPacketProcessor : IEventProcessor<MessageEventArgs<ChatPacket>>
 {
     private readonly SmartFormatter _formatter;
     private readonly SessionService _sessionService;
-    private readonly IMessageConsumer<ChatPacket> _chatConsumer;
     private readonly IMessageProducer<TextPacket> _textProducer;
     private readonly ILogger _logger;
 
-    public ChatServer(SmartFormatter formatter, SessionService sessionService, IMessageConsumer<ChatPacket> chatConsumer, IMessageProducer<TextPacket> textProducer, ILogger logger)
+    public ChatPacketProcessor(SmartFormatter formatter, SessionService sessionService, IMessageProducer<TextPacket> textProducer, ILogger logger)
     {
         _formatter = formatter;
         _sessionService = sessionService;
-        _chatConsumer = chatConsumer;
         _textProducer = textProducer;
         _logger = logger;
-
-        _chatConsumer.NewMessage += OnNewChatPacket;
     }
 
-    public void Start()
-    {
-    }
-
-    private void OnNewChatPacket(object? sender, MessageEventArgs<ChatPacket> e)
+    public Result<EventBehavior> ProcessEvent(object? sender, MessageEventArgs<ChatPacket> e)
     {
         ChatPacket chat = e.Message;
         _logger.LogInformation("Recv chat on channel: {Channel}, from: {Sender}, to: {DestinationID}, value: \"{Value}\"", chat.Channel, e.Sender, chat.DestinationID, chat.Value);
 
-        Result<ChatPacket> sendResult = SendChat(chat, e.Sender);
+        Result<ChatPacket> sendResult = SendTextMessage(chat, e.Sender);
         if (!sendResult)
         {
             _logger.LogError("Failed to send a chat on channel: {Channel}, from: {Sender}.\n{Message}", chat.Channel, e.Sender, sendResult.Message);
+            return new Result<EventBehavior>(false, EventBehavior.Continue, sendResult.Message);
         }
+
+        return new Result<EventBehavior>(true, EventBehavior.Continue);
     }
 
-    private Result<ChatPacket> SendChat(ChatPacket chat, Session sender)
+    private Result<ChatPacket> SendTextMessage(ChatPacket chat, Session sender)
     {
         switch (chat.Channel)
         {
             case ChatChannel.Whisper:
-                return ProcessWhisper(chat, sender);
+                return SendWhisper(chat, sender);
             case ChatChannel.Local:
-                return ProcessLocalBroadcast(chat, sender);
+                return SendLocalBroadcast(chat, sender);
             case ChatChannel.System:
             case ChatChannel.Global:
             case ChatChannel.Help:
             case ChatChannel.Trade:
-                return ProcessGlobalBroadcast(chat, sender);
+                return SendGlobalBroadcast(chat, sender);
             default:
                 return new Result<ChatPacket>(false, chat, $"Unsupported {nameof(ChatChannel)}: {chat.Channel}.");
         }
     }
 
-    private Result<ChatPacket> ProcessWhisper(ChatPacket chat, Session sender)
+    private Result<ChatPacket> SendWhisper(ChatPacket chat, Session sender)
     {
         if (chat.DestinationID == null)
         {
@@ -76,8 +72,8 @@ public class ChatServer
         }
 
         var message = new ChatMessage((int)chat.Channel, sender, target, chat.Value);
-        var messageToSender = new TextPacket(chat.Channel, _formatter.Format("{:L:Chat.Format.Self}", message));
-        var messageToTarget = new TextPacket(chat.Channel, _formatter.Format("{:L:Chat.Format.Other}", message));
+        var messageToSender = new TextPacket(0, chat.Channel, _formatter.Format("{:L:Chat.Format.Self}", message));
+        var messageToTarget = new TextPacket(0, chat.Channel, _formatter.Format("{:L:Chat.Format.Other}", message));
 
         Result sendToSender = _textProducer.Send(messageToSender, sender);
         Result sendToTarget = _textProducer.Send(messageToTarget, target);
@@ -89,11 +85,11 @@ public class ChatServer
         return new Result<ChatPacket>(true, chat);
     }
 
-    private Result<ChatPacket> ProcessLocalBroadcast(ChatPacket chat, Session sender)
+    private Result<ChatPacket> SendLocalBroadcast(ChatPacket chat, Session sender)
     {
         var message = new ChatMessage((int)chat.Channel, sender, null, chat.Value);
-        var messageToSender = new TextPacket(chat.Channel, _formatter.Format("{:L:Chat.Format.Self}", message));
-        var messageToOthers = new TextPacket(chat.Channel, _formatter.Format("{:L:Chat.Format.Other}", message));
+        var messageToSender = new TextPacket(0, chat.Channel, _formatter.Format("{:L:Chat.Format.Self}", message));
+        var messageToOthers = new TextPacket(0, chat.Channel, _formatter.Format("{:L:Chat.Format.Other}", message));
 
         Result sendToSender = _textProducer.Send(messageToSender, sender);
         //  TODO identify local targets
@@ -106,11 +102,11 @@ public class ChatServer
         return new Result<ChatPacket>(true, chat);
     }
 
-    private Result<ChatPacket> ProcessGlobalBroadcast(ChatPacket chat, Session sender)
+    private Result<ChatPacket> SendGlobalBroadcast(ChatPacket chat, Session sender)
     {
         var message = new ChatMessage((int)chat.Channel, sender, null, chat.Value);
-        var messageToSender = new TextPacket(chat.Channel, _formatter.Format("{:L:Chat.Format.Self}", message));
-        var messageToOthers = new TextPacket(chat.Channel, _formatter.Format("{:L:Chat.Format.Other}", message));
+        var messageToSender = new TextPacket(0, chat.Channel, _formatter.Format("{:L:Chat.Format.Self}", message));
+        var messageToOthers = new TextPacket(0, chat.Channel, _formatter.Format("{:L:Chat.Format.Other}", message));
 
         Result sendToSender = _textProducer.Send(messageToSender, sender);
         Result sendToOthers = _textProducer.Send(messageToOthers, new Except<Session>(sender));
