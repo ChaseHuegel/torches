@@ -5,7 +5,7 @@ using Packets;
 
 namespace Networking.Messaging;
 
-public class PacketConsumer<T> : MessageConsumer<T>, IDisposable
+public class PacketConsumer<T> : MessageConsumer<T>
 {
     public PacketConsumer(IPacketSerializer<T> serializer, IDataProducer[] dataProducers)
         : base(serializer, dataProducers) { }

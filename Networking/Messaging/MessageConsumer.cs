@@ -55,7 +55,12 @@ public class MessageConsumer<T> : IMessageConsumer<T>, IDisposable
 
     public void Dispose()
     {
-        Dispose(disposing: true);
+        Dispose(true);
         GC.SuppressFinalize(this);
+    }
+
+    ~MessageConsumer()
+    {
+        Dispose(false);
     }
 }

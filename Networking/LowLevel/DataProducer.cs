@@ -57,7 +57,12 @@ public class DataProducer : IDataProducer, IDisposable
 
     public void Dispose()
     {
-        Dispose(disposing: true);
+        Dispose(true);
         GC.SuppressFinalize(this);
+    }
+
+    ~DataProducer()
+    {
+        Dispose(false);
     }
 }

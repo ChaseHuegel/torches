@@ -69,7 +69,12 @@ public class MessageProducer<T> : IMessageProducer<T>, IDisposable
 
     public void Dispose()
     {
-        Dispose(disposing: true);
+        Dispose(true);
         GC.SuppressFinalize(this);
+    }
+
+    ~MessageProducer()
+    {
+        Dispose(false);
     }
 }
