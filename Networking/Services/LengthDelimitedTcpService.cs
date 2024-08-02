@@ -111,7 +111,7 @@ public class LengthDelimitedTcpService : IDataReceiver, IDataSender
                 }
             }
         }
-        catch (Exception ex)
+        catch
         {
             tcpClient.Dispose();
         }
