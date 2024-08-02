@@ -5,7 +5,7 @@ using Networking.Messaging;
 
 namespace Chat.Server.Processors;
 
-public class MessageEventProcessor<TMessage> : IMessageEventProcessor
+public sealed class MessageEventProcessor<TMessage> : IMessageEventProcessor, IDisposable
 {
     private readonly ILogger _logger;
     private readonly IMessageConsumer<TMessage> _consumer;
@@ -21,6 +21,11 @@ public class MessageEventProcessor<TMessage> : IMessageEventProcessor
     public void Start()
     {
         _consumer.NewMessage += OnNewMessage;
+    }
+
+    public void Dispose()
+    {
+        _consumer.NewMessage -= OnNewMessage;
     }
 
     private void OnNewMessage(object? sender, MessageEventArgs<TMessage> e)

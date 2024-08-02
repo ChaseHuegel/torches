@@ -45,16 +45,10 @@ internal class Program
         _container.Register<IParser, DirectParser>(Reuse.Singleton);
         _container.Register<IDataProducer, DataProducer>(setup: Setup.With(trackDisposableTransient: true), made: Parameters.Of.Type<IParser>().Type<IDataReceiver[]>());
 
-        _container.RegisterMany<ChatPacketSerializer>(Reuse.Singleton);
-        _container.Register<IMessageConsumer<ChatPacket>, PacketConsumer<ChatPacket>>(Reuse.Singleton, setup: Setup.With(trackDisposableTransient: true));
-        _container.Register<IMessageProducer<ChatPacket>, MessageProducer<ChatPacket>>(Reuse.Singleton, setup: Setup.With(trackDisposableTransient: true));
-
-        _container.Register<IMessageEventProcessor, MessageEventProcessor<ChatPacket>>(Reuse.Singleton, ifAlreadyRegistered: IfAlreadyRegistered.AppendNewImplementation);
         RegisterEventProcessors(Assembly.GetAssembly(typeof(Application))!, _container);
 
-        _container.RegisterMany<TextPacketSerializer>(Reuse.Singleton);
-        _container.Register<IMessageConsumer<TextPacket>, PacketConsumer<TextPacket>>(Reuse.Singleton, setup: Setup.With(trackDisposableTransient: true));
-        _container.Register<IMessageProducer<TextPacket>, MessageProducer<TextPacket>>(Reuse.Singleton, setup: Setup.With(trackDisposableTransient: true));
+        RegisterPacket(typeof(ChatPacket), _container);
+        RegisterPacket(typeof(TextPacket), _container);
 
         _container.Register<Application>(Reuse.Singleton);
 
@@ -82,15 +76,60 @@ internal class Program
         }
     }
 
-    private static void RegisterEventProcessors(Assembly assembly, Container container)
+    private static void RegisterPacket(Type packetType, Container container)
     {
-        foreach (var type in assembly.GetTypes())
+        Type packetConsumer = typeof(PacketConsumer<>).MakeGenericType([packetType]);
+        _container.RegisterMany(packetConsumer.GetInterfaces(), packetConsumer, reuse: Reuse.Singleton, setup: Setup.With(trackDisposableTransient: true));
+
+        Type messageProducerInterface = typeof(IMessageProducer<>).MakeGenericType([packetType]);
+        Type messageProducer = typeof(MessageProducer<>).MakeGenericType([packetType]);
+        _container.Register(messageProducerInterface, messageProducer, reuse: Reuse.Singleton, setup: Setup.With(trackDisposableTransient: true));
+
+        Type messageEventProcessorInterface = typeof(IMessageEventProcessor);
+        Type messageEventProcessor = typeof(MessageEventProcessor<>).MakeGenericType([packetType]);
+        _container.Register(messageEventProcessorInterface, messageEventProcessor, Reuse.Singleton, ifAlreadyRegistered: IfAlreadyRegistered.AppendNewImplementation);
+
+        RegisterSerializers(packetType, Assembly.GetAssembly(typeof(Application))!, container);
+        RegisterSerializers(packetType, Assembly.GetAssembly(typeof(ISerializer<>))!, container);
+        RegisterSerializers(packetType, Assembly.GetAssembly(typeof(IPacketSerializer<>))!, container);
+    }
+
+    private static void RegisterSerializers(Type genericType, Assembly assembly, Container container)
+    {
+        foreach (Type type in assembly.GetTypes())
         {
-            if (!type.IsClass)
+            Type[] interfaces = type.GetInterfaces();
+            if (interfaces.Length == 0)
             {
                 continue;
             }
 
+            foreach (Type interfaceType in interfaces)
+            {
+                if (!interfaceType.IsGenericType)
+                {
+                    continue;
+                }
+
+                Type genericTypeDef = interfaceType.GetGenericTypeDefinition();
+                if (genericTypeDef != typeof(ISerializer<>) && genericTypeDef != typeof(IPacketSerializer<>))
+                {
+                    continue;
+                }
+
+                if (interfaceType.GenericTypeArguments[0] == genericType)
+                {
+                    container.RegisterMany(serviceTypes: interfaces, implType: type, reuse: Reuse.Singleton);
+                    break;
+                }
+            }
+        }
+    }
+
+    private static void RegisterEventProcessors(Assembly assembly, Container container)
+    {
+        foreach (Type type in assembly.GetTypes())
+        {
             if (type.GetInterface(typeof(IEventProcessor).FullName!) == null)
             {
                 continue;
