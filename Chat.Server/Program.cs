@@ -47,8 +47,12 @@ internal class Program
 
         RegisterEventProcessors(Assembly.GetAssembly(typeof(Application))!, _container);
 
-        RegisterPacket(typeof(ChatPacket), _container);
-        RegisterPacket(typeof(TextPacket), _container);
+        RegisterSerializers(Assembly.GetAssembly(typeof(Application))!, _container);
+        RegisterSerializers(Assembly.GetAssembly(typeof(ISerializer<>))!, _container);
+        RegisterSerializers(Assembly.GetAssembly(typeof(IPacketSerializer<>))!, _container);
+
+        RegisterPacketHandling(typeof(ChatPacket), _container);
+        RegisterPacketHandling(typeof(TextPacket), _container);
 
         _container.Register<Application>(Reuse.Singleton);
 
@@ -76,28 +80,29 @@ internal class Program
         }
     }
 
-    private static void RegisterPacket(Type packetType, Container container)
+    private static void RegisterPacketHandling(Type packetType, Container container)
     {
         Type packetConsumer = typeof(PacketConsumer<>).MakeGenericType([packetType]);
-        _container.RegisterMany(packetConsumer.GetInterfaces(), packetConsumer, reuse: Reuse.Singleton, setup: Setup.With(trackDisposableTransient: true));
+        container.RegisterMany(packetConsumer.GetInterfaces(), packetConsumer, reuse: Reuse.Singleton, setup: Setup.With(trackDisposableTransient: true));
 
         Type messageProducerInterface = typeof(IMessageProducer<>).MakeGenericType([packetType]);
         Type messageProducer = typeof(MessageProducer<>).MakeGenericType([packetType]);
-        _container.Register(messageProducerInterface, messageProducer, reuse: Reuse.Singleton, setup: Setup.With(trackDisposableTransient: true));
+        container.Register(messageProducerInterface, messageProducer, reuse: Reuse.Singleton, setup: Setup.With(trackDisposableTransient: true));
 
         Type messageEventProcessorInterface = typeof(IMessageEventProcessor);
         Type messageEventProcessor = typeof(MessageEventProcessor<>).MakeGenericType([packetType]);
-        _container.Register(messageEventProcessorInterface, messageEventProcessor, Reuse.Singleton, ifAlreadyRegistered: IfAlreadyRegistered.AppendNewImplementation);
-
-        RegisterSerializers(packetType, Assembly.GetAssembly(typeof(Application))!, container);
-        RegisterSerializers(packetType, Assembly.GetAssembly(typeof(ISerializer<>))!, container);
-        RegisterSerializers(packetType, Assembly.GetAssembly(typeof(IPacketSerializer<>))!, container);
+        container.Register(messageEventProcessorInterface, messageEventProcessor, Reuse.Singleton, ifAlreadyRegistered: IfAlreadyRegistered.AppendNewImplementation);
     }
 
-    private static void RegisterSerializers(Type genericType, Assembly assembly, Container container)
+    private static void RegisterSerializers(Assembly assembly, Container container)
     {
         foreach (Type type in assembly.GetTypes())
         {
+            if (type.IsAbstract)
+            {
+                continue;
+            }
+
             Type[] interfaces = type.GetInterfaces();
             if (interfaces.Length == 0)
             {
@@ -112,12 +117,7 @@ internal class Program
                 }
 
                 Type genericTypeDef = interfaceType.GetGenericTypeDefinition();
-                if (genericTypeDef != typeof(ISerializer<>) && genericTypeDef != typeof(IPacketSerializer<>))
-                {
-                    continue;
-                }
-
-                if (interfaceType.GenericTypeArguments[0] == genericType)
+                if (genericTypeDef == typeof(ISerializer<>))
                 {
                     container.RegisterMany(serviceTypes: interfaces, implType: type, reuse: Reuse.Singleton);
                     break;
@@ -130,6 +130,11 @@ internal class Program
     {
         foreach (Type type in assembly.GetTypes())
         {
+            if (type.IsAbstract)
+            {
+                continue;
+            }
+
             if (!type.GetInterfaces().Any(x => x.IsGenericType && x.GetGenericTypeDefinition() == typeof(IEventProcessor<>)))
             {
                 continue;
