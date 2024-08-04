@@ -4,14 +4,16 @@ using Chat.Server;
 using Chat.Server.Processors;
 using Library.Configuration;
 using Library.Configuration.Localization;
+using Library.Configuration.Modding;
 using Library.Events;
 using Library.IO;
 using Library.Serialization;
+using Library.Serialization.Toml;
+using Library.Services;
 using Library.Util;
 using Networking;
 using Networking.LowLevel;
 using Networking.Messaging;
-using Networking.Serialization;
 using Networking.Services;
 using Packets.Chat;
 using SmartFormat.Core.Extensions;
@@ -32,6 +34,8 @@ internal class Program
     private static async Task Main(string[] args)
     {
         SetupContainer();
+
+        RegisterTomlMappers();
 
         var application = _container.Resolve<Application>();
         await application.Run();
@@ -58,9 +62,15 @@ internal class Program
 
         _container.Register<ILogger>(Made.Of(() => CreateLogger(Arg.Index<Request>(0)), request => request));
 
-        _container.Register<IFileService, FileService>(Reuse.Singleton);
-        _container.Register<IFileParser, LanguageParser>(Reuse.Singleton);
         _container.Register<ConfigurationProvider>(Reuse.Singleton);
+        _container.Register<IModLoader, ModLoader>(Reuse.Singleton);
+
+        _container.Register<IFileService, FileService>(Reuse.Singleton);
+        _container.Register<IFileParser, TomlParser<Language>>(Reuse.Singleton);
+        _container.Register<IFileParser, TomlParser<ModOptions>>(Reuse.Singleton);
+        _container.Register<IFileParser, TomlParser<ModManifest>>(Reuse.Singleton);
+
+        _container.Register<ITomlMapper, PathTomlMapper>(Reuse.Singleton);
 
         _container.RegisterDelegate<SmartFormatter>(SmartFormatterProvider.Resolve);
         _container.Register<ILocalizationProvider, LocalizationService>(Reuse.Singleton);
@@ -141,6 +151,14 @@ internal class Program
             }
 
             container.RegisterMany(serviceTypes: type.GetInterfaces(), implType: type, reuse: Reuse.Singleton, ifAlreadyRegistered: IfAlreadyRegistered.AppendNewImplementation);
+        }
+    }
+
+    private static void RegisterTomlMappers()
+    {
+        foreach (ITomlMapper mapper in _container.ResolveMany<ITomlMapper>())
+        {
+            mapper.Register();
         }
     }
 

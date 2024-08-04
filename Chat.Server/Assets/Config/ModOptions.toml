@@ -1,0 +1,4 @@
+AllowScriptCompilation = false
+LoadOrder = [
+    "chat.server.base"
+]

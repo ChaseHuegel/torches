@@ -1,0 +1,16 @@
+ID = "chat.server.base"
+Name = "Base"
+Description = "The base module of the Chat server."
+Author = "Chase Huegel"
+Website = "https://github.com/ChaseHuegel"
+Source = "https://github.com/ChaseHuegel/torches"
+
+RootPathOverride = ""
+ScriptsPath = "Scripts/"
+AssembliesPath = ""
+
+Assemblies = [
+    "Chat.Server.dll",
+    "Library.dll",
+    "Networking.dll",
+]

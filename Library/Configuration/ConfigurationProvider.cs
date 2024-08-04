@@ -1,39 +1,82 @@
-
 using Library.Configuration.Localization;
+using Library.Configuration.Modding;
 using Library.IO;
+using Microsoft.Extensions.Logging;
 using Swordfish.Library.IO;
 
 namespace Library.Configuration;
 
 public class ConfigurationProvider
 {
-    private readonly IFileService _fileService;
-    private Language[]? _languages;
+    private const string FILE_MOD_OPTIONS = "ModOptions.toml";
 
-    public ConfigurationProvider(IFileService fileService)
+    private readonly Language[] _languages;
+    private readonly ModManifest[] _modManifests;
+    private readonly ModOptions? _modOptions;
+
+    public ConfigurationProvider(ILogger logger, IFileService fileService)
     {
-        _fileService = fileService;
-        LoadLanguageDefinitions();
+        _languages = LoadLanguageDefinitions(fileService);
+        logger.LogInformation("Found {count} languages.", _languages.Length);
+
+        _modManifests = LoadModManifests(fileService);
+        logger.LogInformation("Found {count} mod manifiests.", _modManifests.Length);
+
+        bool loadedModOptions = fileService.TryParse(Paths.Config.At(FILE_MOD_OPTIONS), out _modOptions);
+        if (loadedModOptions)
+        {
+            logger.LogInformation("Found mod options.");
+        }
+        else
+        {
+            logger.LogInformation("No mod options found.");
+        }
     }
 
     public IReadOnlyCollection<Language> GetLanguages()
     {
-        return _languages ?? [];
+        return _languages;
     }
 
-    private void LoadLanguageDefinitions()
+    public ModOptions? GetModOptions()
     {
-        IPath[] langFiles = _fileService.GetFiles(Paths.Lang, SearchOption.AllDirectories);
+        return _modOptions;
+    }
 
-        var languageDefinitions = new Language[langFiles.Length];
+    public IReadOnlyCollection<ModManifest> GetModManifests()
+    {
+        return _modManifests;
+    }
+
+    private static Language[] LoadLanguageDefinitions(IFileService fileService)
+    {
+        IPath[] langFiles = fileService.GetFiles(Paths.Lang, "*.toml", SearchOption.AllDirectories);
+
+        var languageDefinitions = new List<Language>();
         for (int i = 0; i < langFiles.Length; i++)
         {
-            if (_fileService.TryParse(langFiles[i], out Language language))
+            if (fileService.TryParse(langFiles[i], out Language language))
             {
-                languageDefinitions[i] = language;
+                languageDefinitions.Add(language);
             }
         }
 
-        _languages = languageDefinitions;
+        return [.. languageDefinitions];
+    }
+
+    private static ModManifest[] LoadModManifests(IFileService fileService)
+    {
+        IPath[] modFiles = fileService.GetFiles(Paths.Mods, "Manifest.toml", SearchOption.AllDirectories);
+
+        var manifests = new List<ModManifest>();
+        for (int i = 0; i < modFiles.Length; i++)
+        {
+            if (fileService.TryParse(modFiles[i], out ModManifest manifest))
+            {
+                manifests.Add(manifest);
+            }
+        }
+
+        return [.. manifests];
     }
 }

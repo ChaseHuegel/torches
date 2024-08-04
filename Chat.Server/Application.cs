@@ -1,5 +1,6 @@
 using System.Net;
 using Chat.Server.Processors;
+using Library.Services;
 using Networking.Services;
 
 namespace Chat.Server;
@@ -10,12 +11,14 @@ public class Application
     private readonly LengthDelimitedTcpService _tcpService;
     private readonly IMessageEventProcessor[] _messageEventProcessors;
 
-    public Application(ILogger logger, LengthDelimitedTcpService tcpService, IMessageEventProcessor[] messageEventProcessors)
+    public Application(ILogger logger, LengthDelimitedTcpService tcpService, IMessageEventProcessor[] messageEventProcessors, IModLoader modLoader)
     {
         _logger = logger;
         _tcpService = tcpService;
         _messageEventProcessors = messageEventProcessors;
         AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
+
+        modLoader.Load();
     }
 
     public async Task Run()
