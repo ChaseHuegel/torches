@@ -1,4 +1,4 @@
-namespace Library.IO;
+namespace Library.Serialization.Toml;
 
 using Swordfish.Library.IO;
 using Tomlet;

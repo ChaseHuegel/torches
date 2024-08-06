@@ -10,9 +10,9 @@ public class ConfigurationProvider
 {
     private const string FILE_MOD_OPTIONS = "ModOptions.toml";
 
-    private readonly Language[] _languages;
-    private readonly ModManifest[] _modManifests;
-    private readonly ModOptions? _modOptions;
+    private readonly ParsedFile<Language>[] _languages;
+    private readonly ParsedFile<ModManifest>[] _modManifests;
+    private readonly ParsedFile<ModOptions>? _modOptions;
 
     public ConfigurationProvider(ILogger logger, IFileService fileService)
     {
@@ -22,9 +22,10 @@ public class ConfigurationProvider
         _modManifests = LoadModManifests(fileService);
         logger.LogInformation("Found {count} mod manifiests.", _modManifests.Length);
 
-        bool loadedModOptions = fileService.TryParse(Paths.Config.At(FILE_MOD_OPTIONS), out _modOptions);
-        if (loadedModOptions)
+        IPath modOptionsPath = Paths.Config.At(FILE_MOD_OPTIONS);
+        if (fileService.TryParse(modOptionsPath, out ModOptions modOptions))
         {
+            _modOptions = new ParsedFile<ModOptions>(modOptionsPath, modOptions);
             logger.LogInformation("Found mod options.");
         }
         else
@@ -33,47 +34,49 @@ public class ConfigurationProvider
         }
     }
 
-    public IReadOnlyCollection<Language> GetLanguages()
+    public IReadOnlyCollection<ParsedFile<Language>> GetLanguages()
     {
         return _languages;
     }
 
-    public ModOptions? GetModOptions()
+    public ParsedFile<ModOptions>? GetModOptions()
     {
         return _modOptions;
     }
 
-    public IReadOnlyCollection<ModManifest> GetModManifests()
+    public IReadOnlyCollection<ParsedFile<ModManifest>> GetModManifests()
     {
         return _modManifests;
     }
 
-    private static Language[] LoadLanguageDefinitions(IFileService fileService)
+    private static ParsedFile<Language>[] LoadLanguageDefinitions(IFileService fileService)
     {
         IPath[] langFiles = fileService.GetFiles(Paths.Lang, "*.toml", SearchOption.AllDirectories);
 
-        var languageDefinitions = new List<Language>();
+        var languages = new List<ParsedFile<Language>>();
         for (int i = 0; i < langFiles.Length; i++)
         {
-            if (fileService.TryParse(langFiles[i], out Language language))
+            IPath path = langFiles[i];
+            if (fileService.TryParse(path, out Language language))
             {
-                languageDefinitions.Add(language);
+                languages.Add(new ParsedFile<Language>(path, language));
             }
         }
 
-        return [.. languageDefinitions];
+        return [.. languages];
     }
 
-    private static ModManifest[] LoadModManifests(IFileService fileService)
+    private static ParsedFile<ModManifest>[] LoadModManifests(IFileService fileService)
     {
         IPath[] modFiles = fileService.GetFiles(Paths.Mods, "Manifest.toml", SearchOption.AllDirectories);
 
-        var manifests = new List<ModManifest>();
+        var manifests = new List<ParsedFile<ModManifest>>();
         for (int i = 0; i < modFiles.Length; i++)
         {
-            if (fileService.TryParse(modFiles[i], out ModManifest manifest))
+            IPath path = modFiles[i];
+            if (fileService.TryParse(path, out ModManifest manifest))
             {
-                manifests.Add(manifest);
+                manifests.Add(new ParsedFile<ModManifest>(path, manifest));
             }
         }
 

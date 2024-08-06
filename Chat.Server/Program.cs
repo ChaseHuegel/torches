@@ -6,7 +6,6 @@ using Library.Configuration;
 using Library.Configuration.Localization;
 using Library.Configuration.Modding;
 using Library.Events;
-using Library.IO;
 using Library.Serialization;
 using Library.Serialization.Toml;
 using Library.Services;
@@ -75,7 +74,7 @@ internal class Program
         _container.RegisterDelegate<SmartFormatter>(SmartFormatterProvider.Resolve);
         _container.Register<ILocalizationProvider, LocalizationService>(Reuse.Singleton);
         _container.Register<IFormatter, LocalizationFormatter>(Reuse.Singleton);
-        _container.RegisterDelegate<IReadOnlyCollection<Language>>(static () => _container.Resolve<ConfigurationProvider>().GetLanguages());
+        _container.RegisterDelegate<IReadOnlyCollection<Language>>(static () => _container.Resolve<ConfigurationProvider>().GetLanguages().Select(languageFile => languageFile.Value).ToList());
 
         _container.Register<SessionService>(Reuse.Singleton);
 

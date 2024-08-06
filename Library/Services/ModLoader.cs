@@ -1,6 +1,7 @@
 using System.Reflection;
 using Library.Configuration;
 using Library.Configuration.Modding;
+using Library.IO;
 using Library.Util;
 using Microsoft.Extensions.Logging;
 using Swordfish.Library.IO;
@@ -13,13 +14,13 @@ public class ModLoader : IModLoader
     private readonly ILogger _logger;
     private readonly IFileService _fileService;
     private readonly ModOptions? _options;
-    private readonly IReadOnlyCollection<ModManifest> _manfiests;
+    private readonly IReadOnlyCollection<ParsedFile<ModManifest>> _manfiests;
 
     public ModLoader(ILogger logger, IFileService fileService, ConfigurationProvider configurationProvider)
     {
         _logger = logger;
         _fileService = fileService;
-        _options = configurationProvider.GetModOptions();
+        _options = configurationProvider.GetModOptions()?.Value;
         _manfiests = configurationProvider.GetModManifests();
     }
 
@@ -43,12 +44,12 @@ public class ModLoader : IModLoader
             return;
         }
 
-        if (_options.LoadOrder.Length != _manfiests.Count || !_manfiests.All(manfiest => _options.LoadOrder.Contains(manfiest.ID)))
+        if (_options.LoadOrder.Length != _manfiests.Count || !_manfiests.All(manfiest => _options.LoadOrder.Contains(manfiest.Value.ID)))
         {
             _logger.LogWarning("Not all present mods are specified in the load order. Some mods will not be loaded.");
         }
 
-        if (!_options.LoadOrder.All(id => _manfiests.Select(manfiest => manfiest.ID).Contains(id)))
+        if (!_options.LoadOrder.All(id => _manfiests.Select(manfiest => manfiest.Value.ID).Contains(id)))
         {
             _logger.LogWarning("Some mods specified in the load order are missing and will not be loaded.");
         }
@@ -64,14 +65,17 @@ public class ModLoader : IModLoader
 
         foreach (string id in _options.LoadOrder)
         {
-            ModManifest? manifest = _manfiests.FirstOrDefault(manfiest => manfiest.ID == id);
-            if (manifest == null)
+            ParsedFile<ModManifest>? manifestFile = _manfiests.FirstOrDefault(manfiest => manfiest.Value.ID == id);
+            if (manifestFile == null)
             {
                 _logger.LogError("Tried to load mod ID \"{id}\" from the load order but it could not be found. Is it missing a manifest?", id);
                 continue;
             }
 
-            Result<Exception?> result = LoadMod(_logger, _fileService, _options, manifest);
+            ModManifest manifest = manifestFile.Value;
+            IPath modDirectory = manifestFile.Path.GetDirectory();
+
+            Result<Exception?> result = LoadMod(_logger, _fileService, _options, manifest, modDirectory);
             if (result)
             {
                 _logger.LogInformation("Loaded mod \"{name}\" ({id}), by \"{author}\": {description}", manifest.Name, manifest.ID, manifest.Author, manifest.Description);
@@ -83,9 +87,9 @@ public class ModLoader : IModLoader
         }
     }
 
-    private static Result<Exception?> LoadMod(ILogger logger, IFileService fileService, ModOptions options, ModManifest manifest)
+    private static Result<Exception?> LoadMod(ILogger logger, IFileService fileService, ModOptions options, ModManifest manifest, IPath directory)
     {
-        IPath rootPath = manifest.RootPathOverride ?? new Path("");
+        IPath rootPath = manifest.RootPathOverride ?? directory;
 
         //  Compile any scripts into an assembly
         IPath scriptsPath = manifest.ScriptsPath ?? new Path("Scripts/");

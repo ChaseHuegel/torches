@@ -26,7 +26,7 @@ public class PathTomlMapper : ITomlMapper
 
     private TomlValue? SerializeGeneric(IPath? path)
     {
-        return new TomlString(path?.ToString());
+        return path is null ? null : new TomlString(path.ToString());
     }
 
     private IPath DeserializeGeneric(TomlValue value)
