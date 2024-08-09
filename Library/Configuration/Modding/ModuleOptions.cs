@@ -1,6 +1,6 @@
 namespace Library.Configuration.Modding;
 
-public class ModOptions(bool allowScriptCompilation, string[] loadOrder) : TomlConfiguration<ModOptions>
+public class ModuleOptions(bool allowScriptCompilation, string[] loadOrder) : TomlConfiguration<ModuleOptions>
 {
     [TomlProperty("AllowScriptCompilation")]
     public bool AllowScriptCompilation { get; private set; } = allowScriptCompilation;

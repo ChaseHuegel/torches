@@ -2,7 +2,7 @@ using Swordfish.Library.IO;
 
 namespace Library.Configuration.Modding;
 
-public class ModManifest(string id, string name) : TomlConfiguration<ModManifest>
+public class ModuleManfiest(string id, string name) : TomlConfiguration<ModuleManfiest>
 {
     [TomlProperty("ID")]
     public string? ID { get; private set; } = id;

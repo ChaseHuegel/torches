@@ -3,7 +3,7 @@ using Library.Util;
 
 namespace Library.Services;
 
-public interface IModLoader
+public interface IModulesLoader
 {
     void Load(Action<Assembly> hookCallback);
 }

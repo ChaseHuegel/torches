@@ -33,10 +33,11 @@ internal class Program
 
         IContainer coreContainer = SetupCoreContainer();
         RegisterTomlMappers(coreContainer);
-        IContainer childContainer = SetupModContainer(coreContainer);
-        RegisterTomlMappers(childContainer);
 
-        _container = childContainer;
+        IContainer modulesContainer = SetupModulesContainer(coreContainer);
+        RegisterTomlMappers(modulesContainer);
+
+        _container = modulesContainer;
     }
 
     private static async Task Main(string[] args)
@@ -53,17 +54,8 @@ internal class Program
         container.Register<IParser, DirectParser>(Reuse.Singleton);
         container.Register<IDataProducer, DataProducer>(setup: Setup.With(trackDisposableTransient: true), made: Parameters.Of.Type<IParser>().Type<IDataReceiver[]>());
 
-        RegisterEventProcessors(Assembly.GetAssembly(typeof(Application))!, container);
-
-        RegisterSerializers(Assembly.GetAssembly(typeof(Application))!, container);
-        RegisterSerializers(Assembly.GetAssembly(typeof(ISerializer<>))!, container);
-        RegisterSerializers(Assembly.GetAssembly(typeof(IPacketSerializer<>))!, container);
-
-        RegisterPacketHandling(typeof(ChatPacket), container);
-        RegisterPacketHandling(typeof(TextPacket), container);
-
         container.Register<Application>(Reuse.Singleton);
-        container.Register<IModLoader, ModLoader>(Reuse.Singleton);
+        container.Register<IModulesLoader, ModulesLoader>(Reuse.Singleton);
 
         container.Register<ILogger>(Made.Of(() => CreateLogger(Arg.Index<Request>(0)), request => request));
 
@@ -71,8 +63,8 @@ internal class Program
 
         container.Register<IFileService, FileService>(Reuse.Singleton);
         container.Register<IFileParser, TomlParser<Language>>(Reuse.Singleton);
-        container.Register<IFileParser, TomlParser<ModOptions>>(Reuse.Singleton);
-        container.Register<IFileParser, TomlParser<ModManifest>>(Reuse.Singleton);
+        container.Register<IFileParser, TomlParser<ModuleOptions>>(Reuse.Singleton);
+        container.Register<IFileParser, TomlParser<ModuleManfiest>>(Reuse.Singleton);
 
         container.Register<ITomlMapper, PathTomlMapper>(Reuse.Singleton);
 
@@ -87,18 +79,19 @@ internal class Program
         return container;
     }
 
-    private static IContainer SetupModContainer(IContainer parentContainer)
+    private static IContainer SetupModulesContainer(IContainer parentContainer)
     {
         IContainer container = parentContainer.With();
-        container.Resolve<IModLoader>().Load(HookCallback);
+        container.Resolve<IModulesLoader>().Load(HookCallback);
 
         void HookCallback(Assembly assembly)
         {
             RegisterEventProcessors(assembly, container);
             RegisterSerializers(assembly, container);
-            RegisterSerializers(assembly, container);
-            RegisterSerializers(assembly, container);
         }
+
+        RegisterPacketHandling(typeof(ChatPacket), container);
+        RegisterPacketHandling(typeof(TextPacket), container);
 
         ValidateContainerOrDie(container);
         return container;
