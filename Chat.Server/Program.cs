@@ -1,4 +1,5 @@
 ﻿using System.Reflection;
+using System.Windows.Input;
 using System.Xml.Schema;
 using Chat.Server;
 using Chat.Server.Processors;
@@ -11,6 +12,7 @@ using Library.Serialization.Toml;
 using Library.Services;
 using Library.Util;
 using Networking;
+using Networking.Commands;
 using Networking.LowLevel;
 using Networking.Messaging;
 using Networking.Serialization;
@@ -54,7 +56,6 @@ internal class Program
         container.Register<IParser, DirectParser>(Reuse.Singleton);
         container.Register<IDataProducer, DataProducer>(setup: Setup.With(trackDisposableTransient: true), made: Parameters.Of.Type<IParser>().Type<IDataReceiver[]>());
 
-        container.Register<Application>(Reuse.Singleton);
         container.Register<IModulesLoader, ModulesLoader>(Reuse.Singleton);
 
         container.Register<ILogger>(Made.Of(() => CreateLogger(Arg.Index<Request>(0)), request => request));
@@ -92,6 +93,11 @@ internal class Program
 
         RegisterPacketHandling(typeof(ChatPacket), container);
         RegisterPacketHandling(typeof(TextPacket), container);
+
+        container.Register<Application>(Reuse.Singleton);
+        container.Register<CommandParser>(Reuse.Singleton, made: Made.Of(() => new CommandParser(Arg.Index<char>(0), Arg.Of<Command[]>()), _ => '\0'));
+        container.Register<Command, SayCommand>(Reuse.Singleton);
+        container.Register<Command, ExitCommand>(Reuse.Singleton);
 
         ValidateContainerOrDie(container);
         return container;
