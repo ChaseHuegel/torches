@@ -1,4 +1,3 @@
-using Library.Serialization;
 using Packets;
 using Packets.Chat;
 

@@ -15,7 +15,6 @@ public class ModLoader : IModLoader
     private readonly IFileService _fileService;
     private readonly ModOptions? _options;
     private readonly IReadOnlyCollection<ParsedFile<ModManifest>> _manfiests;
-    private readonly Assembly[] _assemblies;
 
     public ModLoader(ILogger logger, IFileService fileService, ConfigurationProvider configurationProvider)
     {
@@ -25,7 +24,7 @@ public class ModLoader : IModLoader
         _manfiests = configurationProvider.GetModManifests();
     }
 
-    public void Load()
+    public void Load(Action<Assembly> hookCallback)
     {
         if (_manfiests.Count == 0)
         {
@@ -76,7 +75,7 @@ public class ModLoader : IModLoader
             ModManifest manifest = manifestFile.Value;
             IPath modDirectory = manifestFile.Path.GetDirectory();
 
-            Result<Exception?> result = LoadMod(_logger, _fileService, _options, manifest, modDirectory);
+            Result<Exception?> result = LoadMod(hookCallback, _logger, _fileService, _options, manifest, modDirectory);
             if (result)
             {
                 _logger.LogInformation("Loaded mod \"{name}\" ({id}), by \"{author}\": {description}", manifest.Name, manifest.ID, manifest.Author, manifest.Description);
@@ -88,7 +87,7 @@ public class ModLoader : IModLoader
         }
     }
 
-    private static Result<Exception?> LoadMod(ILogger logger, IFileService fileService, ModOptions options, ModManifest manifest, IPath directory)
+    private static Result<Exception?> LoadMod(Action<Assembly> hookCallback, ILogger logger, IFileService fileService, ModOptions options, ModManifest manifest, IPath directory)
     {
         IPath rootPath = manifest.RootPathOverride ?? directory;
 
@@ -130,6 +129,7 @@ public class ModLoader : IModLoader
                 try
                 {
                     HookAssembly(assembly);
+                    hookCallback.Invoke(assembly);
                 }
                 catch (Exception ex)
                 {

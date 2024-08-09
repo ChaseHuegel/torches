@@ -1,6 +1,7 @@
+using Library.Serialization;
 using Packets;
 
-namespace Library.Serialization;
+namespace Networking.Serialization;
 
 public interface IPacketSerializer<T> : ISerializer<T>
 {

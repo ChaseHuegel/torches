@@ -13,6 +13,7 @@ using Library.Util;
 using Networking;
 using Networking.LowLevel;
 using Networking.Messaging;
+using Networking.Serialization;
 using Networking.Services;
 using Packets.Chat;
 using SmartFormat.Core.Extensions;
@@ -25,77 +26,87 @@ internal class Program
     private static readonly ILogger _logger;
 
     private static IContainer _container;
-    private static IContainer _modContainer;
 
     static Program()
     {
         _logger = CreateLogger<Program>();
-        _container = new Container();
+
+        IContainer coreContainer = SetupCoreContainer();
+        RegisterTomlMappers(coreContainer);
+        IContainer childContainer = SetupModContainer(coreContainer);
+        RegisterTomlMappers(childContainer);
+
+        _container = childContainer;
     }
 
     private static async Task Main(string[] args)
     {
-        SetupCoreContainer();
-        SetupModContainer();
-
-        RegisterTomlMappers();
-
         var application = _container.Resolve<Application>();
-
-        _modContainer.Resolve<IModLoader>().Load();
-
         await application.Run();
         _container.Dispose();
     }
 
-    private static void SetupCoreContainer()
+    private static IContainer SetupCoreContainer()
     {
-        _container.RegisterMany<LengthDelimitedTcpService>(Reuse.Singleton);
-        _container.Register<IParser, DirectParser>(Reuse.Singleton);
-        _container.Register<IDataProducer, DataProducer>(setup: Setup.With(trackDisposableTransient: true), made: Parameters.Of.Type<IParser>().Type<IDataReceiver[]>());
+        IContainer container = new Container();
+        container.RegisterMany<LengthDelimitedTcpService>(Reuse.Singleton);
+        container.Register<IParser, DirectParser>(Reuse.Singleton);
+        container.Register<IDataProducer, DataProducer>(setup: Setup.With(trackDisposableTransient: true), made: Parameters.Of.Type<IParser>().Type<IDataReceiver[]>());
 
-        RegisterEventProcessors(Assembly.GetAssembly(typeof(Application))!, _container);
+        RegisterEventProcessors(Assembly.GetAssembly(typeof(Application))!, container);
 
-        RegisterSerializers(Assembly.GetAssembly(typeof(Application))!, _container);
-        RegisterSerializers(Assembly.GetAssembly(typeof(ISerializer<>))!, _container);
-        RegisterSerializers(Assembly.GetAssembly(typeof(IPacketSerializer<>))!, _container);
+        RegisterSerializers(Assembly.GetAssembly(typeof(Application))!, container);
+        RegisterSerializers(Assembly.GetAssembly(typeof(ISerializer<>))!, container);
+        RegisterSerializers(Assembly.GetAssembly(typeof(IPacketSerializer<>))!, container);
 
-        RegisterPacketHandling(typeof(ChatPacket), _container);
-        RegisterPacketHandling(typeof(TextPacket), _container);
+        RegisterPacketHandling(typeof(ChatPacket), container);
+        RegisterPacketHandling(typeof(TextPacket), container);
 
-        _container.Register<Application>(Reuse.Singleton);
+        container.Register<Application>(Reuse.Singleton);
+        container.Register<IModLoader, ModLoader>(Reuse.Singleton);
 
-        _container.Register<ILogger>(Made.Of(() => CreateLogger(Arg.Index<Request>(0)), request => request));
+        container.Register<ILogger>(Made.Of(() => CreateLogger(Arg.Index<Request>(0)), request => request));
 
-        _container.Register<ConfigurationProvider>(Reuse.Singleton);
+        container.Register<ConfigurationProvider>(Reuse.Singleton);
 
-        _container.Register<IFileService, FileService>(Reuse.Singleton);
-        _container.Register<IFileParser, TomlParser<Language>>(Reuse.Singleton);
-        _container.Register<IFileParser, TomlParser<ModOptions>>(Reuse.Singleton);
-        _container.Register<IFileParser, TomlParser<ModManifest>>(Reuse.Singleton);
+        container.Register<IFileService, FileService>(Reuse.Singleton);
+        container.Register<IFileParser, TomlParser<Language>>(Reuse.Singleton);
+        container.Register<IFileParser, TomlParser<ModOptions>>(Reuse.Singleton);
+        container.Register<IFileParser, TomlParser<ModManifest>>(Reuse.Singleton);
 
-        _container.Register<ITomlMapper, PathTomlMapper>(Reuse.Singleton);
+        container.Register<ITomlMapper, PathTomlMapper>(Reuse.Singleton);
 
-        _container.RegisterDelegate<SmartFormatter>(SmartFormatterProvider.Resolve);
-        _container.Register<ILocalizationProvider, LocalizationService>(Reuse.Singleton);
-        _container.Register<IFormatter, LocalizationFormatter>(Reuse.Singleton);
-        _container.RegisterDelegate<IReadOnlyCollection<Language>>(static () => _container.Resolve<ConfigurationProvider>().GetLanguages().Select(languageFile => languageFile.Value).ToList());
+        container.RegisterDelegate<SmartFormatter>(SmartFormatterProvider.Resolve);
+        container.Register<ILocalizationProvider, LocalizationService>(Reuse.Singleton);
+        container.Register<IFormatter, LocalizationFormatter>(Reuse.Singleton);
+        container.RegisterDelegate<IReadOnlyCollection<Language>>(() => container.Resolve<ConfigurationProvider>().GetLanguages().Select(languageFile => languageFile.Value).ToList());
 
-        _container.Register<SessionService>(Reuse.Singleton);
+        container.Register<SessionService>(Reuse.Singleton);
 
-        ValidateContainerOrDie(_container);
+        ValidateContainerOrDie(container);
+        return container;
     }
 
-    private static void SetupModContainer()
+    private static IContainer SetupModContainer(IContainer parentContainer)
     {
-        _modContainer = _container.With();
-        _modContainer.Register<IModLoader, ModLoader>(Reuse.Singleton);
-        ValidateContainerOrDie(_modContainer);
+        IContainer container = parentContainer.With();
+        container.Resolve<IModLoader>().Load(HookCallback);
+
+        void HookCallback(Assembly assembly)
+        {
+            RegisterEventProcessors(assembly, container);
+            RegisterSerializers(assembly, container);
+            RegisterSerializers(assembly, container);
+            RegisterSerializers(assembly, container);
+        }
+
+        ValidateContainerOrDie(container);
+        return container;
     }
 
     private static void ValidateContainerOrDie(IContainer container)
     {
-        KeyValuePair<ServiceInfo, ContainerException>[] errors = _container.Validate();
+        KeyValuePair<ServiceInfo, ContainerException>[] errors = container.Validate();
         if (errors.Length > 0)
         {
             foreach (KeyValuePair<ServiceInfo, ContainerException> error in errors)
@@ -170,9 +181,9 @@ internal class Program
         }
     }
 
-    private static void RegisterTomlMappers()
+    private static void RegisterTomlMappers(IContainer container)
     {
-        foreach (ITomlMapper mapper in _container.ResolveMany<ITomlMapper>())
+        foreach (ITomlMapper mapper in container.ResolveMany<ITomlMapper>())
         {
             mapper.Register();
         }

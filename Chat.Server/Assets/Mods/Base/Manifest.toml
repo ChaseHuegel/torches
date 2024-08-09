@@ -10,7 +10,7 @@ ScriptsPath = "Scripts/"
 AssembliesPath = ""
 
 Assemblies = [
-    "Chat.Server.dll",
-    "Library.dll",
-    "Networking.dll",
+    # "Chat.Server.dll",
+    # "Library.dll",
+    # "Networking.dll",
 ]
