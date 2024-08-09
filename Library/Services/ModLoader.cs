@@ -15,6 +15,7 @@ public class ModLoader : IModLoader
     private readonly IFileService _fileService;
     private readonly ModOptions? _options;
     private readonly IReadOnlyCollection<ParsedFile<ModManifest>> _manfiests;
+    private readonly Assembly[] _assemblies;
 
     public ModLoader(ILogger logger, IFileService fileService, ConfigurationProvider configurationProvider)
     {

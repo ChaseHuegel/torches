@@ -21,28 +21,34 @@ using Swordfish.Library.IO;
 
 internal class Program
 {
-    private static readonly Container _container = new();
     private static readonly ILoggerFactory _loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
     private static readonly ILogger _logger;
+
+    private static IContainer _container;
+    private static IContainer _modContainer;
 
     static Program()
     {
         _logger = CreateLogger<Program>();
+        _container = new Container();
     }
 
     private static async Task Main(string[] args)
     {
-        SetupContainer();
+        SetupCoreContainer();
+        SetupModContainer();
 
         RegisterTomlMappers();
 
         var application = _container.Resolve<Application>();
-        await application.Run();
 
+        _modContainer.Resolve<IModLoader>().Load();
+
+        await application.Run();
         _container.Dispose();
     }
 
-    private static void SetupContainer()
+    private static void SetupCoreContainer()
     {
         _container.RegisterMany<LengthDelimitedTcpService>(Reuse.Singleton);
         _container.Register<IParser, DirectParser>(Reuse.Singleton);
@@ -62,7 +68,6 @@ internal class Program
         _container.Register<ILogger>(Made.Of(() => CreateLogger(Arg.Index<Request>(0)), request => request));
 
         _container.Register<ConfigurationProvider>(Reuse.Singleton);
-        _container.Register<IModLoader, ModLoader>(Reuse.Singleton);
 
         _container.Register<IFileService, FileService>(Reuse.Singleton);
         _container.Register<IFileParser, TomlParser<Language>>(Reuse.Singleton);
@@ -78,6 +83,18 @@ internal class Program
 
         _container.Register<SessionService>(Reuse.Singleton);
 
+        ValidateContainerOrDie(_container);
+    }
+
+    private static void SetupModContainer()
+    {
+        _modContainer = _container.With();
+        _modContainer.Register<IModLoader, ModLoader>(Reuse.Singleton);
+        ValidateContainerOrDie(_modContainer);
+    }
+
+    private static void ValidateContainerOrDie(IContainer container)
+    {
         KeyValuePair<ServiceInfo, ContainerException>[] errors = _container.Validate();
         if (errors.Length > 0)
         {
@@ -89,7 +106,7 @@ internal class Program
         }
     }
 
-    private static void RegisterPacketHandling(Type packetType, Container container)
+    private static void RegisterPacketHandling(Type packetType, IContainer container)
     {
         Type packetConsumer = typeof(PacketConsumer<>).MakeGenericType([packetType]);
         container.RegisterMany(packetConsumer.GetInterfaces(), packetConsumer, reuse: Reuse.Singleton, setup: Setup.With(trackDisposableTransient: true));
@@ -103,7 +120,7 @@ internal class Program
         container.Register(messageEventProcessorInterface, messageEventProcessor, Reuse.Singleton, ifAlreadyRegistered: IfAlreadyRegistered.AppendNewImplementation);
     }
 
-    private static void RegisterSerializers(Assembly assembly, Container container)
+    private static void RegisterSerializers(Assembly assembly, IContainer container)
     {
         foreach (Type type in assembly.GetTypes())
         {
@@ -135,7 +152,7 @@ internal class Program
         }
     }
 
-    private static void RegisterEventProcessors(Assembly assembly, Container container)
+    private static void RegisterEventProcessors(Assembly assembly, IContainer container)
     {
         foreach (Type type in assembly.GetTypes())
         {
