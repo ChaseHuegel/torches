@@ -8,10 +8,10 @@ namespace Chat.Server;
 public class Application
 {
     private readonly ILogger _logger;
-    private readonly LengthDelimitedTcpService _tcpService;
+    private readonly LengthDelimitedTcpServer _tcpService;
     private readonly IMessageEventProcessor[] _messageEventProcessors;
 
-    public Application(ILogger logger, LengthDelimitedTcpService tcpService, IMessageEventProcessor[] messageEventProcessors)
+    public Application(ILogger logger, LengthDelimitedTcpServer tcpService, IMessageEventProcessor[] messageEventProcessors)
     {
         _logger = logger;
         _tcpService = tcpService;

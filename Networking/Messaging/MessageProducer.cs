@@ -1,4 +1,5 @@
-﻿using Library.Collections;
+﻿using System.Text;
+using Library.Collections;
 using Library.Serialization;
 using Library.Types;
 using Library.Util;
@@ -31,12 +32,19 @@ public class MessageProducer<T> : IMessageProducer<T>, IDisposable
         byte[] data = _serializer.Serialize(message);
 
         bool success = true;
+        StringBuilder? errorMessage = null;
         for (int i = 0; i < _senders.Length; i++)
         {
-            success &= _senders[i].Send(data, target);
+            Result sendResult = _senders[i].Send(data, target);
+            success &= sendResult.Success;
+            if (!success)
+            {
+                errorMessage ??= new StringBuilder();
+                errorMessage.AppendLine(sendResult.Message);
+            }
         }
 
-        return new Result(success);
+        return new Result(success, errorMessage?.ToString() ?? null);
     }
 
     public Result Send(T message, IFilter<Session> targetFilter)
@@ -44,12 +52,19 @@ public class MessageProducer<T> : IMessageProducer<T>, IDisposable
         byte[] data = _serializer.Serialize(message);
 
         bool success = true;
+        StringBuilder? errorMessage = null;
         for (int i = 0; i < _senders.Length; i++)
         {
-            success &= _senders[i].Send(data, targetFilter);
+            Result sendResult = _senders[i].Send(data, targetFilter);
+            success &= sendResult.Success;
+            if (!success)
+            {
+                errorMessage ??= new StringBuilder();
+                errorMessage.AppendLine(sendResult.Message);
+            }
         }
 
-        return new Result(success);
+        return new Result(success, errorMessage?.ToString() ?? null);
     }
 
     protected virtual void Dispose(bool disposing)

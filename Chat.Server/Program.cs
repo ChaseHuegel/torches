@@ -50,7 +50,7 @@ internal class Program
     private static IContainer SetupCoreContainer()
     {
         IContainer container = new Container();
-        container.RegisterMany<LengthDelimitedTcpService>(Reuse.Singleton);
+        container.RegisterMany<LengthDelimitedTcpServer>(Reuse.Singleton);
         container.Register<IParser, DirectParser>(Reuse.Singleton);
         container.Register<IDataProducer, DataProducer>(setup: Setup.With(trackDisposableTransient: true), made: Parameters.Of.Type<IParser>().Type<IDataReceiver[]>());
 
