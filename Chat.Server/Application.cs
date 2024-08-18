@@ -9,11 +9,11 @@ namespace Chat.Server;
 public class Application
 {
     private readonly ILogger _logger;
-    private readonly LengthDelimitedTcpServer _tcpService;
+    private readonly TCPFrameServer _tcpService;
     private readonly IMessageEventProcessor[] _messageEventProcessors;
     private readonly CommandParser _commandParser;
 
-    public Application(ILogger logger, LengthDelimitedTcpServer tcpService, IMessageEventProcessor[] messageEventProcessors, CommandParser commandParser)
+    public Application(ILogger logger, TCPFrameServer tcpService, IMessageEventProcessor[] messageEventProcessors, CommandParser commandParser)
     {
         _logger = logger;
         _tcpService = tcpService;

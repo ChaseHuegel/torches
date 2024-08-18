@@ -8,11 +8,11 @@ namespace Chat.Client;
 public class Application
 {
     private readonly ILogger _logger;
-    private readonly LengthDelimitedTcpClient _tcpClient;
+    private readonly TCPFrameClient _tcpClient;
     private readonly IMessageEventProcessor[] _messageEventProcessors;
     private readonly CommandParser _commandParser;
 
-    public Application(ILogger logger, LengthDelimitedTcpClient tcpClient, IMessageEventProcessor[] messageEventProcessors, CommandParser commandParser)
+    public Application(ILogger logger, TCPFrameClient tcpClient, IMessageEventProcessor[] messageEventProcessors, CommandParser commandParser)
     {
         _logger = logger;
         _tcpClient = tcpClient;

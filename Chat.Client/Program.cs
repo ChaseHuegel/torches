@@ -51,7 +51,7 @@ internal class Program
     private static IContainer SetupCoreContainer()
     {
         IContainer container = new Container();
-        container.RegisterMany<LengthDelimitedTcpClient>(Reuse.Singleton);
+        container.RegisterMany<TCPFrameClient>(Reuse.Singleton);
 
         container.RegisterInstance<TextWriter>(Console.Out);
 

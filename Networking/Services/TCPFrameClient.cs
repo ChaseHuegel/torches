@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Networking.Services;
 
-public class LengthDelimitedTcpClient(ILogger logger, SessionService sessionService) : FrameStreamService(sessionService)
+public class TCPFrameClient(ILogger logger, SessionService sessionService) : FrameStreamService(sessionService)
 {
     private readonly ILogger _logger = logger;
 
