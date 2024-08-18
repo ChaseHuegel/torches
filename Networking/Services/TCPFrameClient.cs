@@ -12,7 +12,7 @@ public class TCPFrameClient(ILogger logger, SessionService sessionService) : Fra
     {
         try
         {
-            TcpClient tcpClient = new();
+            TcpClient tcpClient = new(AddressFamily.InterNetwork);
 
             tcpClient.Connect(endPoint);
             NetworkStream stream = tcpClient.GetStream();

@@ -31,7 +31,7 @@ public class Application
         }
         _logger.LogInformation("Started {count} message processors.", _messageEventProcessors.Length);
 
-        _tcpService.Start(new IPEndPoint(IPAddress.Loopback, 1234));
+        _tcpService.Start(new IPEndPoint(IPAddress.Any, 1234));
         _logger.LogInformation("TCP service started.");
 
         while (await ProcessInputAsync(Console.ReadLine())) { }
