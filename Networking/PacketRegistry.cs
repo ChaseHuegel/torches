@@ -1,14 +1,16 @@
+using DryIoc;
 using Library.DependencyInjection;
 using Networking.Events;
 using Networking.Messaging;
 using Packets.Chat;
 
-namespace Chat.Client;
+namespace Networking.DependencyInjection;
 
-public class PacketRegistration : IDryIocModule
+public sealed class PacketRegistry : IDryIocModule
 {
     public void Load(IContainer container)
     {
+        RegisterPacketHandling(typeof(ChatPacket), container);
         RegisterPacketHandling(typeof(TextPacket), container);
     }
 
