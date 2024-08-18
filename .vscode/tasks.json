@@ -19,7 +19,7 @@
             "type": "process",
             "group": "build",
             "args": [
-                "watch",
+                // "watch",
                 "run",
                 "--project",
                 "${workspaceFolder}/Chat.Server/Chat.Server.csproj"
@@ -32,7 +32,7 @@
             "type": "process",
             "group": "build",
             "args": [
-                "watch",
+                // "watch",
                 "run",
                 "--project",
                 "${workspaceFolder}/Chat.Client/Chat.Client.csproj"
