@@ -1,0 +1,43 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+        {
+            "label": "Deploy",
+            "dependsOn": [
+                "Chat.Server",
+                "Chat.Client",
+            ],
+            "dependsOrder": "parallel",
+            "group": "build",
+            "problemMatcher": [
+                "$tsc-watch"
+            ]
+        },
+        {
+            "label": "Chat.Server",
+            "command": "dotnet",
+            "type": "process",
+            "group": "build",
+            "args": [
+                "watch",
+                "run",
+                "--project",
+                "${workspaceFolder}/Chat.Server/Chat.Server.csproj"
+            ],
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "Chat.Client",
+            "command": "dotnet",
+            "type": "process",
+            "group": "build",
+            "args": [
+                "watch",
+                "run",
+                "--project",
+                "${workspaceFolder}/Chat.Client/Chat.Client.csproj"
+            ],
+            "problemMatcher": "$msCompile"
+        },
+	]
+}

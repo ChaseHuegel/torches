@@ -7,7 +7,7 @@ Source = "https://github.com/ChaseHuegel/torches"
 
 RootPathOverride = ""
 ScriptsPath = "Scripts/"
-AssembliesPath = ""
+AssembliesPath = "bin/Debug/net8.0"
 
 Assemblies = [
     "Chat.Client.dll",
