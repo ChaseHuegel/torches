@@ -3,7 +3,7 @@ using Networking.Events;
 using Networking.Messaging;
 using Packets.Chat;
 
-namespace Chat.Client.DependencyInjection;
+namespace Chat.Client;
 
 public class PacketRegistration : IDryIocModule
 {

@@ -5,7 +5,7 @@ using Swordfish.Library.IO;
 
 namespace Chat.Client;
 
-public class Application
+internal class Application
 {
     private readonly ILogger _logger;
     private readonly TCPFrameClient _tcpClient;
