@@ -1,22 +1,15 @@
 ﻿using System.Reflection;
-using System.Windows.Input;
 using System.Xml.Schema;
 using Chat.Client;
 using Library.Configuration;
 using Library.Configuration.Localization;
 using Library.Configuration.Modding;
+using Library.DependencyInjection;
 using Library.Events;
 using Library.Serialization;
 using Library.Serialization.Toml;
 using Library.Services;
 using Library.Util;
-using Networking;
-using Networking.Commands;
-using Networking.Events;
-using Networking.LowLevel;
-using Networking.Messaging;
-using Networking.Services;
-using Packets.Chat;
 using SmartFormat.Core.Extensions;
 using SmartFormat.Utilities;
 using Swordfish.Library.IO;
@@ -51,12 +44,8 @@ internal class Program
     private static IContainer SetupCoreContainer()
     {
         IContainer container = new Container();
-        container.RegisterMany<TCPFrameClient>(Reuse.Singleton);
 
         container.RegisterInstance<TextWriter>(Console.Out);
-
-        container.Register<IParser, DirectParser>(Reuse.Singleton);
-        container.Register<IDataProducer, DataProducer>(setup: Setup.With(trackDisposableTransient: true), made: Parameters.Of.Type<IParser>().Type<IDataReceiver[]>());
 
         container.Register<IModulesLoader, ModulesLoader>(Reuse.Singleton);
 
@@ -76,8 +65,6 @@ internal class Program
         container.Register<IFormatter, LocalizationFormatter>(Reuse.Singleton);
         container.RegisterDelegate<IReadOnlyCollection<Language>>(() => container.Resolve<ConfigurationProvider>().GetLanguages().Select(languageFile => languageFile.Value).ToList());
 
-        container.Register<SessionService>(Reuse.Singleton);
-
         ValidateContainerOrDie(container);
         return container;
     }
@@ -85,17 +72,15 @@ internal class Program
     private static IContainer SetupModulesContainer(IContainer parentContainer)
     {
         IContainer container = parentContainer.With();
-        container.Resolve<IModulesLoader>().Load(HookCallback);
+        parentContainer.Resolve<IModulesLoader>().Load(HookCallback);
 
         void HookCallback(Assembly assembly)
         {
             RegisterEventProcessors(assembly, container);
             RegisterSerializers(assembly, container);
             RegisterCommands(assembly, container);
+            RegisterDryIocModules(assembly, container);
         }
-
-        // RegisterPacketHandling(typeof(ChatPacket), container);
-        RegisterPacketHandling(typeof(TextPacket), container);
 
         container.Register<Application>(Reuse.Singleton);
         container.Register<CommandParser>(Reuse.Singleton, made: Made.Of(() => new CommandParser(Arg.Index<char>(0), Arg.Of<Command[]>()), _ => '\0'));
@@ -115,20 +100,6 @@ internal class Program
             }
             Environment.Exit(1);
         }
-    }
-
-    private static void RegisterPacketHandling(Type packetType, IContainer container)
-    {
-        Type packetConsumer = typeof(PacketConsumer<>).MakeGenericType([packetType]);
-        container.RegisterMany(packetConsumer.GetInterfaces(), packetConsumer, reuse: Reuse.Singleton, setup: Setup.With(trackDisposableTransient: true));
-
-        Type messageProducerInterface = typeof(IMessageProducer<>).MakeGenericType([packetType]);
-        Type messageProducer = typeof(MessageProducer<>).MakeGenericType([packetType]);
-        container.Register(messageProducerInterface, messageProducer, reuse: Reuse.Singleton, setup: Setup.With(trackDisposableTransient: true));
-
-        Type messageEventProcessorInterface = typeof(IMessageEventProcessor);
-        Type messageEventProcessor = typeof(MessageEventProcessor<>).MakeGenericType([packetType]);
-        container.Register(messageEventProcessorInterface, messageEventProcessor, Reuse.Singleton, ifAlreadyRegistered: IfAlreadyRegistered.AppendNewImplementation);
     }
 
     private static void RegisterSerializers(Assembly assembly, IContainer container)
@@ -195,7 +166,26 @@ internal class Program
                 continue;
             }
 
-            container.Register(typeof(Command), type, reuse: Reuse.Singleton);
+            container.Register(typeof(Command), type, reuse: Reuse.Singleton, ifAlreadyRegistered: IfAlreadyRegistered.AppendNewImplementation);
+        }
+    }
+
+    private static void RegisterDryIocModules(Assembly assembly, IContainer container)
+    {
+        foreach (Type type in assembly.GetTypes())
+        {
+            if (type.IsAbstract)
+            {
+                continue;
+            }
+
+            if (!typeof(IDryIocModule).IsAssignableFrom(type))
+            {
+                continue;
+            }
+
+            var containerModule = (IDryIocModule)Activator.CreateInstance(type)!;
+            containerModule.Load(container);
         }
     }
 
