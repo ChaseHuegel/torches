@@ -2,7 +2,6 @@
 using System.Windows.Input;
 using System.Xml.Schema;
 using Chat.Server;
-using Chat.Server.Processors;
 using Library.Configuration;
 using Library.Configuration.Localization;
 using Library.Configuration.Modding;
@@ -13,9 +12,9 @@ using Library.Services;
 using Library.Util;
 using Networking;
 using Networking.Commands;
+using Networking.Events;
 using Networking.LowLevel;
 using Networking.Messaging;
-using Networking.Serialization;
 using Networking.Services;
 using Packets.Chat;
 using SmartFormat.Core.Extensions;
@@ -53,6 +52,9 @@ internal class Program
     {
         IContainer container = new Container();
         container.RegisterMany<LengthDelimitedTcpServer>(Reuse.Singleton);
+
+        container.RegisterInstance<TextWriter>(Console.Out);
+
         container.Register<IParser, DirectParser>(Reuse.Singleton);
         container.Register<IDataProducer, DataProducer>(setup: Setup.With(trackDisposableTransient: true), made: Parameters.Of.Type<IParser>().Type<IDataReceiver[]>());
 

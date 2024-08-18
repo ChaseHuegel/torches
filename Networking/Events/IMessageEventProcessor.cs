@@ -1,4 +1,4 @@
-namespace Chat.Server.Processors;
+namespace Networking.Events;
 
 public interface IMessageEventProcessor
 {

@@ -1,22 +1,21 @@
 using System.Net;
-using Library.Services;
 using Networking.Events;
 using Networking.Services;
 using Swordfish.Library.IO;
 
-namespace Chat.Server;
+namespace Chat.Client;
 
 public class Application
 {
     private readonly ILogger _logger;
-    private readonly LengthDelimitedTcpServer _tcpService;
+    private readonly LengthDelimitedTcpClient _tcpClient;
     private readonly IMessageEventProcessor[] _messageEventProcessors;
     private readonly CommandParser _commandParser;
 
-    public Application(ILogger logger, LengthDelimitedTcpServer tcpService, IMessageEventProcessor[] messageEventProcessors, CommandParser commandParser)
+    public Application(ILogger logger, LengthDelimitedTcpClient tcpClient, IMessageEventProcessor[] messageEventProcessors, CommandParser commandParser)
     {
         _logger = logger;
-        _tcpService = tcpService;
+        _tcpClient = tcpClient;
         _messageEventProcessors = messageEventProcessors;
         _commandParser = commandParser;
         AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
@@ -24,19 +23,19 @@ public class Application
 
     public async Task Run()
     {
-
         foreach (IMessageEventProcessor processor in _messageEventProcessors)
         {
             processor.Start();
+            _logger.LogInformation("Started {type}.", processor.GetType());
         }
         _logger.LogInformation("Started {count} message processors.", _messageEventProcessors.Length);
 
-        _tcpService.Start(new IPEndPoint(IPAddress.Loopback, 1234));
-        _logger.LogInformation("TCP service started.");
+        _tcpClient.Connect(new IPEndPoint(IPAddress.Loopback, 1234));
+        _logger.LogInformation("TCP service connected.");
 
         while (await ProcessInputAsync(Console.ReadLine())) { }
 
-        _logger.LogInformation("Closing server.");
+        _logger.LogInformation("Closing client.");
     }
 
     private async Task<bool> ProcessInputAsync(string? input)

@@ -5,6 +5,7 @@ using Library.Types;
 using Library.Util;
 using Networking;
 using Networking.Events;
+using Networking.LowLevel;
 using Networking.Messaging;
 using Packets.Chat;
 
@@ -14,10 +15,10 @@ public class ChatPacketProcessor : IEventProcessor<MessageEventArgs<ChatPacket>>
 {
     private readonly SmartFormatter _formatter;
     private readonly SessionService _sessionService;
-    private readonly IMessageProducer<TextPacket> _textProducer;
+    private readonly IDataSender _textProducer;
     private readonly ILogger _logger;
 
-    public ChatPacketProcessor(SmartFormatter formatter, SessionService sessionService, IMessageProducer<TextPacket> textProducer, ILogger logger)
+    public ChatPacketProcessor(SmartFormatter formatter, SessionService sessionService, IDataSender textProducer, ILogger logger)
     {
         _formatter = formatter;
         _sessionService = sessionService;
@@ -72,11 +73,11 @@ public class ChatPacketProcessor : IEventProcessor<MessageEventArgs<ChatPacket>>
         }
 
         var message = new ChatMessage((int)chat.Channel, sender, target, chat.Value);
-        var messageToSender = new TextPacket(0, chat.Channel, _formatter.Format("{:L:Chat.Format.Self}", message));
-        var messageToTarget = new TextPacket(0, chat.Channel, _formatter.Format("{:L:Chat.Format.Other}", message));
+        var messageToSender = new TextPacket(1, chat.Channel, _formatter.Format("{:L:Chat.Format.Self}", message));
+        var messageToTarget = new TextPacket(1, chat.Channel, _formatter.Format("{:L:Chat.Format.Other}", message));
 
-        Result sendToSender = _textProducer.Send(messageToSender, sender);
-        Result sendToTarget = _textProducer.Send(messageToTarget, target);
+        Result sendToSender = SendTextMessage(messageToSender, sender);
+        Result sendToTarget = SendTextMessage(messageToTarget, target);
         if (!sendToSender || !sendToTarget)
         {
             return new Result<ChatPacket>(false, chat, StringUtils.JoinValid('\n', sendToSender.Message, sendToTarget.Message));
@@ -88,12 +89,12 @@ public class ChatPacketProcessor : IEventProcessor<MessageEventArgs<ChatPacket>>
     private Result<ChatPacket> SendLocalBroadcast(ChatPacket chat, Session sender)
     {
         var message = new ChatMessage((int)chat.Channel, sender, null, chat.Value);
-        var messageToSender = new TextPacket(0, chat.Channel, _formatter.Format("{:L:Chat.Format.Self}", message));
-        var messageToOthers = new TextPacket(0, chat.Channel, _formatter.Format("{:L:Chat.Format.Other}", message));
+        var messageToSender = new TextPacket(1, chat.Channel, _formatter.Format("{:L:Chat.Format.Self}", message));
+        var messageToOthers = new TextPacket(1, chat.Channel, _formatter.Format("{:L:Chat.Format.Other}", message));
 
-        Result sendToSender = _textProducer.Send(messageToSender, sender);
+        Result sendToSender = SendTextMessage(messageToSender, sender);
         //  TODO identify local targets
-        Result sendToOthers = _textProducer.Send(messageToOthers, new Except<Session>(sender));
+        Result sendToOthers = SendTextMessage(messageToOthers, new Except<Session>(sender));
         if (!sendToSender || !sendToOthers)
         {
             return new Result<ChatPacket>(false, chat, StringUtils.JoinValid('\n', sendToSender.Message, sendToOthers.Message));
@@ -105,16 +106,28 @@ public class ChatPacketProcessor : IEventProcessor<MessageEventArgs<ChatPacket>>
     private Result<ChatPacket> SendGlobalBroadcast(ChatPacket chat, Session sender)
     {
         var message = new ChatMessage((int)chat.Channel, sender, null, chat.Value);
-        var messageToSender = new TextPacket(0, chat.Channel, _formatter.Format("{:L:Chat.Format.Self}", message));
-        var messageToOthers = new TextPacket(0, chat.Channel, _formatter.Format("{:L:Chat.Format.Other}", message));
+        var messageToSender = new TextPacket(1, chat.Channel, _formatter.Format("{:L:Chat.Format.Self}", message));
+        var messageToOthers = new TextPacket(1, chat.Channel, _formatter.Format("{:L:Chat.Format.Other}", message));
 
-        Result sendToSender = _textProducer.Send(messageToSender, sender);
-        Result sendToOthers = _textProducer.Send(messageToOthers, new Except<Session>(sender));
+        Result sendToSender = SendTextMessage(messageToSender, sender);
+        Result sendToOthers = SendTextMessage(messageToOthers, new Except<Session>(sender));
         if (!sendToSender || !sendToOthers)
         {
             return new Result<ChatPacket>(false, chat, StringUtils.JoinValid('\n', sendToSender.Message, sendToOthers.Message));
         }
 
         return new Result<ChatPacket>(true, chat);
+    }
+
+    private Result SendTextMessage(TextPacket text, Session target)
+    {
+        var packet = new Packet(PacketType.Text, text.Serialize());
+        return _textProducer.Send(packet.Serialize(), target);
+    }
+
+    private Result SendTextMessage(TextPacket text, IFilter<Session> filter)
+    {
+        var packet = new Packet(PacketType.Text, text.Serialize());
+        return _textProducer.Send(packet.Serialize(), filter);
     }
 }

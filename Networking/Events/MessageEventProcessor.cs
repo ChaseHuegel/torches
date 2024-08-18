@@ -1,9 +1,9 @@
 using Library.Events;
 using Library.Util;
-using Networking.Events;
+using Microsoft.Extensions.Logging;
 using Networking.Messaging;
 
-namespace Chat.Server.Processors;
+namespace Networking.Events;
 
 public sealed class MessageEventProcessor<TMessage> : IMessageEventProcessor, IDisposable
 {

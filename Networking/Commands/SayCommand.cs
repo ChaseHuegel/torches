@@ -26,6 +26,11 @@ public class SayCommand : Command
     {
         string message = string.Join(' ', args.TakeAll());
 
+        if (string.IsNullOrWhiteSpace(message))
+        {
+            return Task.FromResult(CommandState.Failure);
+        }
+
         //  TODO need to introduce a PacketProducer<T> based on MessageProducer<T> that allows doing a simplified Send(new ChatPacket()).
         var packet = new Packet(PacketType.Chat, new ChatPacket(1, ChatChannel.Local, 0, message).Serialize());
         _sender.Send(packet.Serialize(), new All<Session>());

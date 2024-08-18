@@ -7,32 +7,36 @@ using Library.Types;
 using Library.Util;
 using Networking.Events;
 using Networking.LowLevel;
-using Packets;
-using Packets.Chat;
 using Swordfish.Library.Threading;
 
 namespace Networking.Services;
 
-public class LengthDelimitedTcpServer : IDataReceiver, IDataSender
+public class LengthDelimitedTcpClient : IDataReceiver, IDataSender
 {
     public event EventHandler<DataEventArgs>? Received;
 
     private readonly SessionService _sessionService;
-    private readonly ConcurrentDictionary<Session, TcpClient> Connections = new();
+    private readonly ConcurrentDictionary<Session, NetworkStream> Connections = new();
 
-    public LengthDelimitedTcpServer(SessionService sessionService)
+    public LengthDelimitedTcpClient(SessionService sessionService)
     {
         _sessionService = sessionService;
     }
 
-    public void Start(IPEndPoint endPoint)
+    public void Connect(IPEndPoint endPoint)
     {
-        Task.Run(() => RunTcpServer(endPoint));
+        TcpClient tcpClient = new();
+        tcpClient.Connect(endPoint);
+        NetworkStream stream = tcpClient.GetStream();
+        Result<Session> sessionRequest = _sessionService.RequestNew();
+        Connections.TryAdd(sessionRequest, stream);
+        var listenWorker = new ThreadWorker(() => ListenToPeer(sessionRequest, stream), $"Peer.{sessionRequest.Value}.TCP.{endPoint.Port}");
+        listenWorker.Start();
     }
 
     public Result Send(byte[] data, Session target)
     {
-        if (!Connections.TryGetValue(target, out TcpClient? client))
+        if (!Connections.TryGetValue(target, out NetworkStream? peer))
         {
             return new Result(false, $"Unknown session: {target}.");
         }
@@ -44,7 +48,7 @@ public class LengthDelimitedTcpServer : IDataReceiver, IDataSender
             lengthDelimiter.CopyTo(buffer, 0);
             data.CopyTo(buffer, lengthDelimiter.Length);
 
-            client.GetStream().Write(buffer);
+            peer.Write(buffer);
             return new Result(true);
         }
         catch (Exception ex)
@@ -58,7 +62,7 @@ public class LengthDelimitedTcpServer : IDataReceiver, IDataSender
         bool success = true;
         StringBuilder? errorMessage = null;
 
-        foreach (KeyValuePair<Session, TcpClient> connection in Connections)
+        foreach (KeyValuePair<Session, NetworkStream> connection in Connections)
         {
             if (!targetFilter.Allowed(connection.Key))
             {
@@ -75,21 +79,6 @@ public class LengthDelimitedTcpServer : IDataReceiver, IDataSender
         }
 
         return new Result(success, errorMessage?.ToString() ?? null);
-    }
-
-    private async Task RunTcpServer(IPEndPoint endPoint)
-    {
-        TcpListener tcpServer = new(endPoint.Address, endPoint.Port);
-        tcpServer.Start();
-
-        while (true)
-        {
-            TcpClient client = await tcpServer.AcceptTcpClientAsync();
-            Session session = _sessionService.RequestNew();
-            Connections.TryAdd(session, client);
-            var listenWorker = new ThreadWorker(() => ListenToPeer(session, client.GetStream()), $"TcpListener.Connection.{session}");
-            listenWorker.Start();
-        }
     }
 
     private void ListenToPeer(Session session, NetworkStream stream)
