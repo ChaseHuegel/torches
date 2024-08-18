@@ -33,10 +33,10 @@ internal class Program
         _logger = CreateLogger<Program>();
 
         IContainer coreContainer = SetupCoreContainer();
-        RegisterTomlMappers(coreContainer);
+        ActivateTomlMappers(coreContainer);
 
         IContainer modulesContainer = SetupModulesContainer(coreContainer);
-        RegisterTomlMappers(modulesContainer);
+        ActivateTomlMappers(modulesContainer);
 
         _container = modulesContainer;
     }
@@ -91,6 +91,7 @@ internal class Program
         {
             RegisterEventProcessors(assembly, container);
             RegisterSerializers(assembly, container);
+            RegisterCommands(assembly, container);
         }
 
         // RegisterPacketHandling(typeof(ChatPacket), container);
@@ -98,8 +99,6 @@ internal class Program
 
         container.Register<Application>(Reuse.Singleton);
         container.Register<CommandParser>(Reuse.Singleton, made: Made.Of(() => new CommandParser(Arg.Index<char>(0), Arg.Of<Command[]>()), _ => '\0'));
-        container.Register<Command, SayCommand>(Reuse.Singleton);
-        container.Register<Command, ExitCommand>(Reuse.Singleton);
 
         ValidateContainerOrDie(container);
         return container;
@@ -182,7 +181,25 @@ internal class Program
         }
     }
 
-    private static void RegisterTomlMappers(IContainer container)
+    private static void RegisterCommands(Assembly assembly, IContainer container)
+    {
+        foreach (Type type in assembly.GetTypes())
+        {
+            if (type.IsAbstract)
+            {
+                continue;
+            }
+
+            if (!type.IsAssignableTo<Command>())
+            {
+                continue;
+            }
+
+            container.Register(typeof(Command), type, reuse: Reuse.Singleton);
+        }
+    }
+
+    private static void ActivateTomlMappers(IContainer container)
     {
         foreach (ITomlMapper mapper in container.ResolveMany<ITomlMapper>())
         {
