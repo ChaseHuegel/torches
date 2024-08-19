@@ -1,5 +1,4 @@
 using System.Net;
-using Library.Services;
 using Networking.Events;
 using Networking.Services;
 using Swordfish.Library.IO;

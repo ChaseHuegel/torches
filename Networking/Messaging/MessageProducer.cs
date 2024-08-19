@@ -3,7 +3,6 @@ using Library.Collections;
 using Library.Serialization;
 using Library.Types;
 using Library.Util;
-using Networking.Events;
 using Networking.LowLevel;
 
 namespace Networking.Messaging;

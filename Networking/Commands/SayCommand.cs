@@ -1,7 +1,6 @@
 using Library.Collections;
 using Library.Types;
 using Networking.LowLevel;
-using Networking.Messaging;
 using Packets;
 using Packets.Chat;
 using Swordfish.Library.Collections;
