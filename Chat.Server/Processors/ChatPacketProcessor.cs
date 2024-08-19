@@ -14,14 +14,14 @@ public class ChatPacketProcessor : IEventProcessor<MessageEventArgs<ChatPacket>>
 {
     private readonly SmartFormatter _formatter;
     private readonly SessionService _sessionService;
-    private readonly IDataSender _textProducer;
+    private readonly IDataSender _sender;
     private readonly ILogger _logger;
 
-    public ChatPacketProcessor(SmartFormatter formatter, SessionService sessionService, IDataSender textProducer, ILogger logger)
+    public ChatPacketProcessor(SmartFormatter formatter, SessionService sessionService, IDataSender sender, ILogger logger)
     {
         _formatter = formatter;
         _sessionService = sessionService;
-        _textProducer = textProducer;
+        _sender = sender;
         _logger = logger;
     }
 
@@ -121,12 +121,12 @@ public class ChatPacketProcessor : IEventProcessor<MessageEventArgs<ChatPacket>>
     private Result SendTextMessage(TextPacket text, Session target)
     {
         var packet = new Packet(PacketType.Text, text.Serialize());
-        return _textProducer.Send(packet.Serialize(), target);
+        return _sender.Send(packet.Serialize(), target);
     }
 
     private Result SendTextMessage(TextPacket text, IFilter<Session> filter)
     {
         var packet = new Packet(PacketType.Text, text.Serialize());
-        return _textProducer.Send(packet.Serialize(), filter);
+        return _sender.Send(packet.Serialize(), filter);
     }
 }

@@ -1,12 +1,11 @@
-﻿using Chat.Server;
-using Library;
+﻿using Library;
 using Library.DependencyInjection;
 using Library.Serialization;
 using Networking;
 using Networking.LowLevel;
 using Networking.Services;
 
-namespace Chat.Server;
+namespace World.Server;
 
 internal class Program : IDryIocModule
 {

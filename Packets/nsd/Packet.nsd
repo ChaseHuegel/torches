@@ -12,4 +12,5 @@ enum PacketType
     Null        = 0;
     Chat        = 100;
     Text        = 101;
+    Entity      = 200;
 }

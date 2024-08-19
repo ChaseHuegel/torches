@@ -1,0 +1,16 @@
+ID = "chat.world.base"
+Name = "Base"
+Description = "The base module of the World server."
+Author = "Chase Huegel"
+Website = "https://github.com/ChaseHuegel"
+Source = "https://github.com/ChaseHuegel/torches"
+
+RootPathOverride = ""
+ScriptsPath = "Scripts/"
+AssembliesPath = "bin/Debug/net8.0"
+
+Assemblies = [
+    "Chat.World.dll",
+    "Library.dll",
+    "Networking.dll",
+]

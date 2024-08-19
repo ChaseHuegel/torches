@@ -1,0 +1,18 @@
+#version 1.0;
+#namespace Packets.Chat;
+
+message EntityPacket
+{
+    byte Version;
+    uint? ID;
+    string Name;
+    Position Position;
+    float Heading;
+}
+
+message Position
+{
+    float X;
+    float Y;
+    float Z;
+}

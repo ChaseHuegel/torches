@@ -6,6 +6,8 @@ using Networking;
 using Networking.LowLevel;
 using Networking.Services;
 
+namespace Chat.Client;
+
 internal class Program : IDryIocModule
 {
     public void Load(IContainer container)
