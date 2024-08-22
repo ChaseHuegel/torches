@@ -141,7 +141,7 @@ public class WorldV3
         }
 
         int chunkIndex = entity >> _chunkBitWidth;
-        entity -= _chunkLength * chunkIndex;
+        int localEntity = entity - (_chunkLength * chunkIndex);
         ComponentChunk<T1> chunk;
         if (store1.Chunks.Count <= chunkIndex)
         {
@@ -153,8 +153,8 @@ public class WorldV3
             chunk = store1.Chunks[chunkIndex];
         }
 
-        chunk.Components[entity] = component1;
-        chunk.Exists[entity] = true;
+        chunk.Components[localEntity] = component1;
+        chunk.Exists[localEntity] = true;
     }
 
     private int NewEntity()
