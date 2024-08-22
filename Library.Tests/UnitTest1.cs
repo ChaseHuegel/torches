@@ -33,6 +33,30 @@ public class Tests
     }
 
     [Test]
+    public void BenchmarkWorldV4()
+    {
+        var world = new WorldV4(16);
+
+        using (var elapsed = new ElapsedLogger("Created 100,000 named entity."))
+        {
+            for (int i = 0; i < 100_000; i++)
+            {
+                world.Create(new Identification2() { Name = "Named entity" });
+            }
+        }
+
+        using (var elapsed = new ElapsedLogger("Queried identity entity."))
+        {
+            world.Query((int entity, ref Identification2 id) => { });
+        }
+
+        using (var elapsed = new ElapsedLogger("Queried identity entity."))
+        {
+            world.Query((int entity, ref Identification2 id) => { });
+        }
+    }
+
+    [Test]
     public void BenchmarkWorldV3()
     {
         var world = new WorldV3(16);
