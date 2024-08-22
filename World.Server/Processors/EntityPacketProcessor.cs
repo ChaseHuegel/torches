@@ -23,12 +23,6 @@ public class EntityPacketProcessor(ILogger logger, IDataSender sender) : IEventP
         return new Result<EventBehavior>(true, EventBehavior.Continue);
     }
 
-    private Result SendEntityPacket(EntityPacket entity, Session target)
-    {
-        var packet = new Packet(PacketType.Entity, entity.Serialize());
-        return _sender.Send(packet.Serialize(), target);
-    }
-
     private Result SendEntityPacket(EntityPacket entity, IFilter<Session> filter)
     {
         var packet = new Packet(PacketType.Entity, entity.Serialize());
