@@ -1,11 +1,5 @@
 namespace Library.ECS;
 
-public class ArchetypeV3(int hash, Type[] types)
-{
-    public readonly int Hash = hash;
-    public readonly Type[] Types = types;
-}
-
 public class ComponentStoreV3() { }
 
 public class ComponentStoreV3<T>() : ComponentStoreV3
@@ -28,7 +22,6 @@ public class WorldV3
     private readonly int _chunkBitWidth;
     private readonly int _chunkLength;
 
-    public Dictionary<int, ArchetypeV3> ArchetypeMap = [];
     public Dictionary<Type, ComponentStoreV3> Stores = [];
 
     public WorldV3(byte chunkBitWidth = 16)
