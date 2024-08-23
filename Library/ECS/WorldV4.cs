@@ -50,9 +50,9 @@ public class WorldV4
             store1 = (ComponentStoreV4<T1>)store;
         }
 
-        Parallel.ForEach(store1.Chunks, ForEachChunk);
-        void ForEachChunk(ComponentChunkV4<T1> chunk, ParallelLoopState state, long chunkIndex)
+        for (int chunkIndex = 0; chunkIndex < store1.Chunks.Count; chunkIndex++)
         {
+            var chunk = store1.Chunks[chunkIndex];
             Parallel.ForEach(chunk.Components, ForEachEntity);
             void ForEachEntity(T1 c1, ParallelLoopState state, long componentIndex)
             {
@@ -61,7 +61,7 @@ public class WorldV4
                     return;
                 }
 
-                int entity = (int)componentIndex + (_chunkLength * (int)chunkIndex);
+                int entity = (int)componentIndex + (_chunkLength * chunkIndex);
                 forEach(entity, ref c1);
             }
         }
