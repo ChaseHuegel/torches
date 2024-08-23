@@ -1,3 +1,5 @@
+using System.Runtime.CompilerServices;
+
 namespace Library.ECS;
 
 public class DataStore
@@ -22,7 +24,8 @@ public class DataStore
     public int Create<T1>(T1 component1) where T1 : IDataComponent
     {
         int entity = NewEntity();
-        AddComponent(entity, component1);
+        (int chunkIndex, int localEntity) = ToChunkSpace(entity);
+        SetAt(chunkIndex, localEntity, component1, true);
         return entity;
     }
 
@@ -31,8 +34,9 @@ public class DataStore
         where T2 : IDataComponent
     {
         int entity = NewEntity();
-        AddComponent(entity, component1);
-        AddComponent(entity, component2);
+        (int chunkIndex, int localEntity) = ToChunkSpace(entity);
+        SetAt(chunkIndex, localEntity, component1, true);
+        SetAt(chunkIndex, localEntity, component2, true);
         return entity;
     }
 
@@ -49,21 +53,21 @@ public class DataStore
             store1 = (ChunkedStore<T1>)store;
         }
 
-        int chunkIndex = entity >> _chunkBitWidth;
-        int localEntity = entity - (_chunkLength * chunkIndex);
-        Chunk<T1> chunk;
-        if (store1.Chunks.Count <= chunkIndex)
+        (int chunkIndex, int localEntity) = ToChunkSpace(entity);
+        SetAt(store1, chunkIndex, localEntity, component1, true);
+    }
+
+    public bool RemoveComponent<T1>(int entity) where T1 : IDataComponent
+    {
+        if (!_stores.TryGetValue(typeof(T1), out ChunkedStore? store))
         {
-            chunk = new Chunk<T1>(_chunkLength);
-            store1.Chunks.Add(chunk);
-        }
-        else
-        {
-            chunk = store1.Chunks[chunkIndex];
+            return false;
         }
 
-        chunk.Components[localEntity] = component1;
-        chunk.Exists[localEntity] = true;
+        var store1 = (ChunkedStore<T1>)store;
+        (int chunkIndex, int localEntity) = ToChunkSpace(entity);
+        SetAt(store1, chunkIndex, localEntity, default!, false);
+        return true;
     }
 
     public void Query<T1>(ForEach<T1> forEach) where T1 : IDataComponent
@@ -89,7 +93,7 @@ public class DataStore
                     return;
                 }
 
-                int entity = (int)componentIndex + (_chunkLength * chunkIndex);
+                int entity = ToGlobalSpace((int)componentIndex, chunkIndex);
                 forEach(entity, ref c1);
             }
         }
@@ -137,14 +141,73 @@ public class DataStore
                 }
 
                 T2 c2 = chunk2.Components[componentIndex];
-                int entity = (int)componentIndex + (_chunkLength * chunkIndex);
+                int entity = ToGlobalSpace((int)componentIndex, chunkIndex);
                 forEach(entity, ref c1, ref c2);
             }
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int NewEntity()
     {
+        //  TODO recycle entities
         return Interlocked.Increment(ref _lastEntity);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private (int chunkIndex, int localEntity) ToChunkSpace(int entity)
+    {
+        int chunkIndex = entity >> _chunkBitWidth;
+        int localEntity = entity - (_chunkLength * chunkIndex);
+        return (chunkIndex, localEntity);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private int ToGlobalSpace(int chunkIndex, int localEntity)
+    {
+        return localEntity + (_chunkLength * chunkIndex);
+    }
+
+    private void SetAt<T1>(int chunkIndex, int localEntity, T1 component1, bool exists) where T1 : IDataComponent
+    {
+        ChunkedStore<T1> store1;
+        if (!_stores.TryGetValue(typeof(T1), out ChunkedStore? store))
+        {
+            store1 = new ChunkedStore<T1>();
+            _stores.Add(typeof(T1), store1);
+        }
+        else
+        {
+            store1 = (ChunkedStore<T1>)store;
+        }
+
+        SetAt(store1, chunkIndex, localEntity, component1, exists);
+    }
+
+    private void SetAt<T1>(ChunkedStore<T1> store, int chunkIndex, int localEntity, T1 component1, bool exists) where T1 : IDataComponent
+    {
+        Chunk<T1> chunk;
+        if (store.Chunks.Count <= chunkIndex)
+        {
+            if (exists)
+            {
+                chunk = new Chunk<T1>(_chunkLength);
+                store.Chunks.Add(chunk);
+            }
+            else
+            {
+                //  Don't do anything if setting exists = false and a chunk doesn't exist here
+                return;
+            }
+        }
+        else
+        {
+            chunk = store.Chunks[chunkIndex];
+        }
+
+        // TODO this is not thread safe
+        chunk.Components[localEntity] = component1;
+        chunk.Exists[localEntity] = exists;
+        //  TODO should chunks get cleaned up when they are empty?
     }
 }
