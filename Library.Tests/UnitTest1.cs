@@ -50,6 +50,8 @@ public class Tests
     [Test]
     public void Benchmark_ECSContext_1System_3Components()
     {
+        Console.WriteLine("Running ECSContext...");
+
         var ecs = new ECSContext();
         ecs.AddSystem<GravitySystem>();
 
@@ -91,6 +93,8 @@ public class Tests
     [Test]
     public void Benchmark_Friflo_1System_3Components()
     {
+        Console.WriteLine("Running Friflo...");
+
         var world = new Friflo.Engine.ECS.EntityStore();
 
         using (var elapsed = new ElapsedLogger("Created 100,000 entities."))
