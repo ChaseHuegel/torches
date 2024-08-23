@@ -144,16 +144,18 @@ public class DataStore
         for (int chunkIndex = 0; chunkIndex < store1.Chunks.Count; chunkIndex++)
         {
             var chunk = store1.Chunks[chunkIndex];
-            Parallel.ForEach(chunk.Components, ForEachEntity);
-            void ForEachEntity(T1 c1, ParallelLoopState state, long componentIndex)
+            for (int componentIndex = 0; componentIndex < chunk.Components.Length; componentIndex++)
             {
                 if (!chunk.Exists[componentIndex])
                 {
                     return;
                 }
 
-                int entity = ToGlobalSpace((int)componentIndex, chunkIndex);
+                int entity = ToGlobalSpace(componentIndex, chunkIndex);
+                var c1 = chunk.Components[componentIndex];
+
                 forEach(entity, ref c1);
+
                 chunk.Components[componentIndex] = c1;  //  TODO use a buffer to apply changes?
             }
         }
@@ -190,20 +192,22 @@ public class DataStore
                 return;
             }
 
-            var chunk = store1.Chunks[chunkIndex];
-            Parallel.ForEach(chunk.Components, ForEachEntity);
-            void ForEachEntity(T1 c1, ParallelLoopState state, long componentIndex)
+            var chunk1 = store1.Chunks[chunkIndex];
+            for (int componentIndex = 0; componentIndex < chunk1.Components.Length; componentIndex++)
             {
                 Chunk<T2> chunk2 = store2.Chunks[chunkIndex];
-                if (!chunk.Exists[componentIndex] || !chunk2.Exists[componentIndex])
+                if (!chunk1.Exists[componentIndex] || !chunk2.Exists[componentIndex])
                 {
                     return;
                 }
 
+                int entity = ToGlobalSpace(componentIndex, chunkIndex);
+                T1 c1 = chunk1.Components[componentIndex];
                 T2 c2 = chunk2.Components[componentIndex];
-                int entity = ToGlobalSpace((int)componentIndex, chunkIndex);
+
                 forEach(entity, ref c1, ref c2);
-                chunk.Components[componentIndex] = c1;  //  TODO use a buffer to apply changes?
+
+                chunk1.Components[componentIndex] = c1;  //  TODO use a buffer to apply changes?
                 chunk2.Components[componentIndex] = c2;
             }
         }
