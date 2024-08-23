@@ -24,20 +24,20 @@ public class Tests
         }
     }
 
-    public struct IdentityComponent : IDataComponent
+    public struct IdentityComponent : IDataComponent, IComponent
     {
         public string Name;
         public string Tag;
     }
 
-    public struct PositionComponent(float x, float y, float z) : IDataComponent
+    public struct PositionComponent(float x, float y, float z) : IDataComponent, IComponent
     {
         public float X = x;
         public float Y = y;
         public float Z = z;
     }
 
-    public struct PhysicsComponent : IDataComponent;
+    public struct PhysicsComponent : IDataComponent, IComponent;
 
     public class GravitySystem(DataStore store) : EntitySystem<PhysicsComponent, PositionComponent>(store)
     {
@@ -88,112 +88,50 @@ public class Tests
         }
     }
 
-    public struct Identification2 : IDataComponent
-    {
-        public string Name;
-        public string Tag;
-    }
-
     [Test]
-    public void BenchmarkDataStore()
-    {
-        var world = new DataStore(16);
-
-        using (var elapsed = new ElapsedLogger("Created 100,000 named entity."))
-        {
-            for (int i = 0; i < 100_000; i++)
-            {
-                world.Create(new Identification2() { Name = "Named entity" });
-            }
-        }
-
-        using (var elapsed = new ElapsedLogger("Queried identity entity."))
-        {
-            world.Query((int entity, ref Identification2 id) => { });
-        }
-
-        using (var elapsed = new ElapsedLogger("Queried identity entity."))
-        {
-            world.Query((int entity, ref Identification2 id) => { });
-        }
-    }
-
-    public struct Identification : IComponent
-    {
-        public string Name;
-        public string Tag;
-    }
-
-    [Test]
-    public void BenchmarkFriflo()
+    public void Benchmark_Friflo_1System_3Components()
     {
         var world = new Friflo.Engine.ECS.EntityStore();
 
-        using (var elapsed = new ElapsedLogger("Created 100,000 named entity."))
+        using (var elapsed = new ElapsedLogger("Created 100,000 entities."))
         {
             for (int i = 0; i < 100_000; i++)
             {
                 var entity = world.CreateEntity();
-                entity.AddComponent(new Identification { Name = "Named entity" });
+                entity.AddComponent(new IdentityComponent { Name = $"Entity {entity.Id} ({i})" });
+                entity.AddComponent(new PhysicsComponent());
+                entity.AddComponent(new PositionComponent(i, 0, 0));
             }
         }
 
-        using (var elapsed = new ElapsedLogger("Queried identity entity."))
+        using (var elapsed = new ElapsedLogger("Queried entities."))
         {
-            var query = world.Query<Identification>();
-            query.ForEachEntity((ref Identification id, Friflo.Engine.ECS.Entity entity) => { });
+            var query = world.Query<IdentityComponent, PositionComponent>();
+            query.ForEachEntity((ref IdentityComponent id, ref PositionComponent loc, Friflo.Engine.ECS.Entity entity) => { });
         }
 
-        using (var elapsed = new ElapsedLogger("Queried identity entity."))
+        using (var elapsed = new ElapsedLogger("Ticked entities."))
         {
-            var query = world.Query<Identification>();
-            query.ForEachEntity((ref Identification id, Friflo.Engine.ECS.Entity entity) => { });
-        }
-    }
-
-    [Test]
-    public void BenchmarkChunkedDataStore()
-    {
-        var world = new ChunkedDataStore(100_001, 3);
-
-        using (var elapsed = new ElapsedLogger("Created 100,000 named entity."))
-        {
-            for (int i = 0; i < 100_000; i++)
-            {
-                world.Add([new Identification { Name = "Named entity" }, null, null]);
-            }
+            var query = world.Query<PhysicsComponent, PositionComponent>();
+            query.ForEachEntity((ref PhysicsComponent physics, ref PositionComponent loc, Friflo.Engine.ECS.Entity entity) => { loc.Y -= 0.9f; });
         }
 
-        using (var elapsed = new ElapsedLogger("Queried identity entity."))
+        using (var elapsed = new ElapsedLogger("Ticked entities."))
         {
-            var entities = world.All();
-            int[] matches = new int[entities.Length];
-            int matchOffset = 0;
-            for (int i = 0; i < entities.Length; i++)
-            {
-                if (world.HasAt(entities[i], 0))
-                {
-                    matches[matchOffset++] = i;
-                }
-            }
-
-            ArraySegment<int> identityQuery = new(matches, 0, matchOffset);
+            var query = world.Query<PhysicsComponent, PositionComponent>();
+            query.ForEachEntity((ref PhysicsComponent physics, ref PositionComponent loc, Friflo.Engine.ECS.Entity entity) => { loc.Y -= 0.9f; });
         }
 
-        using (var elapsed = new ElapsedLogger("Queried identity entity."))
+        using (var elapsed = new ElapsedLogger("Ticked entities."))
         {
-            var entities = world.All();
-            int[] matches = new int[entities.Length];
-            int matchOffset = 0;
-            for (int i = 0; i < entities.Length; i++)
-            {
-                if (world.HasAt(entities[i], 0))
-                {
-                    matches[matchOffset++] = i;
-                }
-            }
+            var query = world.Query<PhysicsComponent, PositionComponent>();
+            query.ForEachEntity((ref PhysicsComponent physics, ref PositionComponent loc, Friflo.Engine.ECS.Entity entity) => { loc.Y -= 0.9f; });
+        }
 
-            ArraySegment<int> identityQuery = new(matches, 0, matchOffset);
+        using (var elapsed = new ElapsedLogger("Queried entities."))
+        {
+            var query = world.Query<IdentityComponent, PositionComponent>();
+            query.ForEachEntity((ref IdentityComponent id, ref PositionComponent loc, Friflo.Engine.ECS.Entity entity) => { });
         }
     }
 }
