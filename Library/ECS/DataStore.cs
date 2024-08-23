@@ -154,6 +154,7 @@ public class DataStore
 
                 int entity = ToGlobalSpace((int)componentIndex, chunkIndex);
                 forEach(entity, ref c1);
+                chunk.Components[componentIndex] = c1;  //  TODO use a buffer to apply changes?
             }
         }
     }
@@ -202,6 +203,8 @@ public class DataStore
                 T2 c2 = chunk2.Components[componentIndex];
                 int entity = ToGlobalSpace((int)componentIndex, chunkIndex);
                 forEach(entity, ref c1, ref c2);
+                chunk.Components[componentIndex] = c1;  //  TODO use a buffer to apply changes?
+                chunk2.Components[componentIndex] = c2;
             }
         }
     }
