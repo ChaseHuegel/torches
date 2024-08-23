@@ -64,7 +64,7 @@ public class Tests
 
         using (var elapsed = new ElapsedLogger("Queried entities."))
         {
-            ecs.DataStore.Query((int entity, ref IdentityComponent id, ref PositionComponent position) => { /*Console.WriteLine($"{entity}.{id.Name}.Position.Y: {position.Y}");*/ });
+            ecs.DataStore.Query((int entity, ref IdentityComponent id, ref PositionComponent position) => { });
         }
 
         using (var elapsed = new ElapsedLogger("Ticked entities."))
@@ -84,7 +84,7 @@ public class Tests
 
         using (var elapsed = new ElapsedLogger("Queried entities."))
         {
-            ecs.DataStore.Query((int entity, ref IdentityComponent id, ref PositionComponent position) => { /*Console.WriteLine($"{entity}.{id.Name}.Position.Y: {position.Y}");*/ });
+            ecs.DataStore.Query((int entity, ref IdentityComponent id, ref PositionComponent position) => { });
         }
     }
 
