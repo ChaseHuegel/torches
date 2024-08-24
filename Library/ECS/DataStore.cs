@@ -169,16 +169,16 @@ public class DataStore
 
         for (int chunkIndex = 0; chunkIndex < chunks.Length; chunkIndex++)
         {
-            var chunk = chunks[chunkIndex];
+            Chunk<T1> chunk = chunks[chunkIndex];
             for (int componentIndex = 0; componentIndex < chunk.Components.Length; componentIndex++)
             {
                 if (!chunk.Exists[componentIndex])
                 {
-                    return;
+                    continue;
                 }
 
                 int entity = ToGlobalSpace(componentIndex, chunkIndex);
-                var c1 = chunk.Components[componentIndex];
+                T1 c1 = chunk.Components[componentIndex];
 
                 forEach(entity, ref c1);
 
@@ -214,20 +214,16 @@ public class DataStore
             }
         }
 
-        for (int chunkIndex = 0; chunkIndex < chunks1.Length; chunkIndex++)
+        int minChunks = Math.Min(chunks1.Length, chunks2.Length);
+        for (int chunkIndex = 0; chunkIndex < minChunks; chunkIndex++)
         {
-            if (chunks2.Length <= chunkIndex)
-            {
-                return;
-            }
-
-            var chunk1 = chunks1[chunkIndex];
+            Chunk<T1> chunk1 = chunks1[chunkIndex];
             for (int componentIndex = 0; componentIndex < chunk1.Components.Length; componentIndex++)
             {
                 Chunk<T2> chunk2 = chunks2[chunkIndex];
                 if (!chunk1.Exists[componentIndex] || !chunk2.Exists[componentIndex])
                 {
-                    return;
+                    continue;
                 }
 
                 int entity = ToGlobalSpace(componentIndex, chunkIndex);
