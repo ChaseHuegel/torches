@@ -7,7 +7,7 @@ public abstract class EntitySystem(DataStore store)
     public abstract void Tick();
 }
 
-public abstract class EntitySystem<T1>(DataStore store) : EntitySystem(store) where T1 : IDataComponent
+public abstract class EntitySystem<T1>(DataStore store) : EntitySystem(store) where T1 : struct, IDataComponent
 {
     public override void Tick()
     {
@@ -18,8 +18,8 @@ public abstract class EntitySystem<T1>(DataStore store) : EntitySystem(store) wh
 }
 
 public abstract class EntitySystem<T1, T2>(DataStore store) : EntitySystem(store)
-    where T1 : IDataComponent
-    where T2 : IDataComponent
+    where T1 : struct, IDataComponent
+    where T2 : struct, IDataComponent
 {
     public override void Tick()
     {

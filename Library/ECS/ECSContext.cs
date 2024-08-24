@@ -1,12 +1,12 @@
 
 namespace Library.ECS;
 
-public class ECSContext()
+public class ECSContext(byte chunkBitWidth = 16)
 {
     private readonly object _systemsLock = new();
     private readonly List<EntitySystem> _systems = [];
 
-    public readonly DataStore DataStore = new();
+    public readonly DataStore DataStore = new(chunkBitWidth);
 
     public bool AddSystem<T>() where T : EntitySystem
     {

@@ -40,6 +40,7 @@ internal class ChunkedStore<T>(int chunkSize) : ChunkedStore
 
         chunk.Components[localEntity] = component1;
         chunk.Exists[localEntity] = exists;
+        chunk.Count += exists ? 1 : -1;
         //  TODO should chunks get cleaned up when they are empty?
     }
 }
