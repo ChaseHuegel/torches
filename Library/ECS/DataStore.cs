@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace Library.ECS;
 
@@ -7,6 +8,7 @@ public class DataStore
     private readonly int _chunkBitWidth;
     private readonly int _chunkSize;
     private readonly Dictionary<Type, ChunkedStore> _stores = [];   //  TODO not thread safe
+    private readonly object _chunkAndStoreLock = new();
 
     private int _lastEntity = 0;
 
@@ -23,127 +25,151 @@ public class DataStore
 
     public int Create<T1>(T1 component1) where T1 : IDataComponent
     {
-        int entity = NewEntity();
-        (int chunkIndex, int localEntity) = ToChunkSpace(entity);
-        SetAt(chunkIndex, localEntity, component1, true);
-        return entity;
+        lock (_chunkAndStoreLock)
+        {
+            int entity = NewEntity();
+            (int chunkIndex, int localEntity) = ToChunkSpace(entity);
+            SetAt(chunkIndex, localEntity, component1, true);
+            return entity;
+        }
     }
 
     public int Create<T1, T2>(T1 component1, T2 component2)
         where T1 : IDataComponent
         where T2 : IDataComponent
     {
-        int entity = NewEntity();
-        (int chunkIndex, int localEntity) = ToChunkSpace(entity);
-        SetAt(chunkIndex, localEntity, component1, true);
-        SetAt(chunkIndex, localEntity, component2, true);
-        return entity;
+        lock (_chunkAndStoreLock)
+        {
+            int entity = NewEntity();
+            (int chunkIndex, int localEntity) = ToChunkSpace(entity);
+            SetAt(chunkIndex, localEntity, component1, true);
+            SetAt(chunkIndex, localEntity, component2, true);
+            return entity;
+        }
     }
 
     public void Delete(int entity)
     {
-        (int chunkIndex, int localEntity) = ToChunkSpace(entity);
-        foreach (ChunkedStore store in _stores.Values)
+        lock (_chunkAndStoreLock)
         {
-            store.SetAt(chunkIndex, localEntity, false);
+            (int chunkIndex, int localEntity) = ToChunkSpace(entity);
+            foreach (ChunkedStore store in _stores.Values)
+            {
+                store.SetAt(chunkIndex, localEntity, false);
+            }
         }
     }
 
     public void Add<T1>(int entity, T1 component1) where T1 : IDataComponent
     {
-        ChunkedStore<T1> store1;
-        if (!_stores.TryGetValue(typeof(T1), out ChunkedStore? store))
+        lock (_chunkAndStoreLock)
         {
-            store1 = new ChunkedStore<T1>(_chunkSize);
-            _stores.Add(typeof(T1), store1);
-        }
-        else
-        {
-            store1 = (ChunkedStore<T1>)store;
-        }
+            ChunkedStore<T1> store1;
+            if (!_stores.TryGetValue(typeof(T1), out ChunkedStore? store))
+            {
+                store1 = new ChunkedStore<T1>(_chunkSize);
+                _stores.Add(typeof(T1), store1);
+            }
+            else
+            {
+                store1 = (ChunkedStore<T1>)store;
+            }
 
-        (int chunkIndex, int localEntity) = ToChunkSpace(entity);
-        store1.SetAt(chunkIndex, localEntity, component1, true);
+            (int chunkIndex, int localEntity) = ToChunkSpace(entity);
+            store1.SetAt(chunkIndex, localEntity, component1, true);
+        }
     }
 
     public void Add<T1, T2>(int entity, T1 component1, T2 component2)
         where T1 : IDataComponent
         where T2 : IDataComponent
     {
-        ChunkedStore<T1> store1;
-        if (!_stores.TryGetValue(typeof(T1), out ChunkedStore? store))
+        lock (_chunkAndStoreLock)
         {
-            store1 = new ChunkedStore<T1>(_chunkSize);
-            _stores.Add(typeof(T1), store1);
-        }
-        else
-        {
-            store1 = (ChunkedStore<T1>)store;
-        }
+            ChunkedStore<T1> store1;
+            if (!_stores.TryGetValue(typeof(T1), out ChunkedStore? store))
+            {
+                store1 = new ChunkedStore<T1>(_chunkSize);
+                _stores.Add(typeof(T1), store1);
+            }
+            else
+            {
+                store1 = (ChunkedStore<T1>)store;
+            }
 
-        ChunkedStore<T2> store2;
-        if (!_stores.TryGetValue(typeof(T2), out ChunkedStore? storeB))
-        {
-            store2 = new ChunkedStore<T2>(_chunkSize);
-            _stores.Add(typeof(T2), store2);
-        }
-        else
-        {
-            store2 = (ChunkedStore<T2>)storeB;
-        }
+            ChunkedStore<T2> store2;
+            if (!_stores.TryGetValue(typeof(T2), out ChunkedStore? storeB))
+            {
+                store2 = new ChunkedStore<T2>(_chunkSize);
+                _stores.Add(typeof(T2), store2);
+            }
+            else
+            {
+                store2 = (ChunkedStore<T2>)storeB;
+            }
 
-        (int chunkIndex, int localEntity) = ToChunkSpace(entity);
-        store1.SetAt(chunkIndex, localEntity, component1, true);
-        store2.SetAt(chunkIndex, localEntity, component2, true);
+            (int chunkIndex, int localEntity) = ToChunkSpace(entity);
+            store1.SetAt(chunkIndex, localEntity, component1, true);
+            store2.SetAt(chunkIndex, localEntity, component2, true);
+        }
     }
 
     public bool Remove<T1>(int entity) where T1 : IDataComponent
     {
-        if (!_stores.TryGetValue(typeof(T1), out ChunkedStore? store))
+        lock (_chunkAndStoreLock)
         {
-            return false;
-        }
+            if (!_stores.TryGetValue(typeof(T1), out ChunkedStore? store))
+            {
+                return false;
+            }
 
-        (int chunkIndex, int localEntity) = ToChunkSpace(entity);
-        store.SetAt(chunkIndex, localEntity, false);
-        return true;
+            (int chunkIndex, int localEntity) = ToChunkSpace(entity);
+            store.SetAt(chunkIndex, localEntity, false);
+            return true;
+        }
     }
 
     public bool Remove<T1, T2>(int entity)
         where T1 : IDataComponent
         where T2 : IDataComponent
     {
-        if (!_stores.TryGetValue(typeof(T1), out ChunkedStore? store))
+        lock (_chunkAndStoreLock)
         {
-            return false;
-        }
+            if (!_stores.TryGetValue(typeof(T1), out ChunkedStore? store))
+            {
+                return false;
+            }
 
-        if (!_stores.TryGetValue(typeof(T1), out ChunkedStore? storeB))
-        {
-            return false;
-        }
+            if (!_stores.TryGetValue(typeof(T1), out ChunkedStore? storeB))
+            {
+                return false;
+            }
 
-        (int chunkIndex, int localEntity) = ToChunkSpace(entity);
-        store.SetAt(chunkIndex, localEntity, false);
-        storeB.SetAt(chunkIndex, localEntity, false);
-        return true;
+            (int chunkIndex, int localEntity) = ToChunkSpace(entity);
+            store.SetAt(chunkIndex, localEntity, false);
+            storeB.SetAt(chunkIndex, localEntity, false);
+            return true;
+        }
     }
 
-    public void Query<T1>(ForEach<T1> forEach) where T1 : IDataComponent
+    public unsafe void Query<T1>(ForEach<T1> forEach) where T1 : IDataComponent
     {
-        ChunkedStore<T1> store1;
-        if (!_stores.TryGetValue(typeof(T1), out ChunkedStore? store))
+        Span<Chunk<T1>> chunks;
+        lock (_chunkAndStoreLock)
         {
-            return;
-        }
-        else
-        {
-            store1 = (ChunkedStore<T1>)store;
+            if (!_stores.TryGetValue(typeof(T1), out ChunkedStore? store))
+            {
+                return;
+            }
+            else
+            {
+                chunks = CollectionsMarshal.AsSpan(((ChunkedStore<T1>)store).Chunks);
+            }
         }
 
-        for (int chunkIndex = 0; chunkIndex < store1.Chunks.Count; chunkIndex++)
+        for (int chunkIndex = 0; chunkIndex < chunks.Length; chunkIndex++)
         {
-            var chunk = store1.Chunks[chunkIndex];
+            var chunk = chunks[chunkIndex];
             for (int componentIndex = 0; componentIndex < chunk.Components.Length; componentIndex++)
             {
                 if (!chunk.Exists[componentIndex])
@@ -165,37 +191,40 @@ public class DataStore
         where T1 : IDataComponent
         where T2 : IDataComponent
     {
-        ChunkedStore<T1> store1;
-        if (!_stores.TryGetValue(typeof(T1), out ChunkedStore? store))
+        Span<Chunk<T1>> chunks1;
+        Span<Chunk<T2>> chunks2;
+        lock (_chunkAndStoreLock)
         {
-            return;
-        }
-        else
-        {
-            store1 = (ChunkedStore<T1>)store;
+            if (!_stores.TryGetValue(typeof(T1), out ChunkedStore? store1))
+            {
+                return;
+            }
+            else
+            {
+                chunks1 = CollectionsMarshal.AsSpan(((ChunkedStore<T1>)store1).Chunks);
+            }
+
+            if (!_stores.TryGetValue(typeof(T2), out ChunkedStore? store2))
+            {
+                return;
+            }
+            else
+            {
+                chunks2 = CollectionsMarshal.AsSpan(((ChunkedStore<T2>)store2).Chunks);
+            }
         }
 
-        ChunkedStore<T2> store2;
-        if (!_stores.TryGetValue(typeof(T2), out ChunkedStore? storeB))
+        for (int chunkIndex = 0; chunkIndex < chunks1.Length; chunkIndex++)
         {
-            return;
-        }
-        else
-        {
-            store2 = (ChunkedStore<T2>)storeB;
-        }
-
-        for (int chunkIndex = 0; chunkIndex < store1.Chunks.Count; chunkIndex++)
-        {
-            if (store2.Chunks.Count <= chunkIndex)
+            if (chunks2.Length <= chunkIndex)
             {
                 return;
             }
 
-            var chunk1 = store1.Chunks[chunkIndex];
+            var chunk1 = chunks1[chunkIndex];
             for (int componentIndex = 0; componentIndex < chunk1.Components.Length; componentIndex++)
             {
-                Chunk<T2> chunk2 = store2.Chunks[chunkIndex];
+                Chunk<T2> chunk2 = chunks2[chunkIndex];
                 if (!chunk1.Exists[componentIndex] || !chunk2.Exists[componentIndex])
                 {
                     return;
