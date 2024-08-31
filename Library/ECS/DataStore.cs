@@ -9,6 +9,8 @@ public class DataStore
     private readonly int _chunkSize;
     private readonly Dictionary<Type, ChunkedStore> _stores = [];   //  TODO not thread safe
     private readonly object _chunkAndStoreLock = new();
+    private readonly Queue<int> _recycledEntities = new();
+    private readonly object _recycleLock = new();
 
     private int _lastEntity = 0;
 
@@ -56,6 +58,11 @@ public class DataStore
             foreach (ChunkedStore store in _stores.Values)
             {
                 store.SetAt(chunkIndex, localEntity, false);
+            }
+
+            lock (_recycleLock)
+            {
+                _recycledEntities.Enqueue(entity);
             }
         }
     }
@@ -284,7 +291,14 @@ public class DataStore
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int NewEntity()
     {
-        //  TODO recycle entities
+        lock (_recycleLock)
+        {
+            if (_recycledEntities.Count > 0)
+            {
+                return _recycledEntities.Dequeue();
+            }
+        }
+
         return Interlocked.Increment(ref _lastEntity);
     }
 
