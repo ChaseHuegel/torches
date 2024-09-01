@@ -39,11 +39,7 @@ internal class Application
         _tcpClient.Connect(new IPEndPoint(IPAddress.Loopback, 1235));
         _logger.LogInformation("TCP service connected.");
 
-        while (await ProcessInputAsync(Console.ReadLine()))
-        {
-            await Task.Delay(50);
-            _ecs.Tick();
-        }
+        while (await ProcessInputAsync(Console.ReadLine())) { }
 
         _logger.LogInformation("Closing client.");
     }

@@ -15,10 +15,11 @@ public class EntityPacketProcessor(ILogger logger, ECSContext ecs) : IEventProce
     public Result<EventBehavior> ProcessEvent(object? sender, MessageEventArgs<EntityPacket> e)
     {
         EntityPacket entity = e.Message;
-        _logger.LogInformation("Recv entity update (Name: {name} ID: {entity}).", entity.Name, entity.ID);
 
         _ecs.DataStore.AddOrUpdate(entity.ID, new IdentifierComponent(entity.Name));
         _ecs.DataStore.AddOrUpdate(entity.ID, new PositionComponent(entity.Position.X, entity.Position.Y, entity.Position.Z));
+
+        _ecs.Tick();
 
         return new Result<EventBehavior>(true, EventBehavior.Continue);
     }
