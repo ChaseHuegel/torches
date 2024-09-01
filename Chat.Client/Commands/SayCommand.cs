@@ -6,20 +6,15 @@ using Packets.Chat;
 using Swordfish.Library.Collections;
 using Swordfish.Library.IO;
 
-namespace Networking.Commands;
+namespace Chat.Client.Commands;
 
-public class SayCommand : Command
+public class SayCommand(IDataSender sender) : Command
 {
     public override string Option => "say";
     public override string Description => "Send a message to the local channel.";
     public override string ArgumentsHint => "<message>";
 
-    private readonly IDataSender _sender;
-
-    public SayCommand(IDataSender sender)
-    {
-        _sender = sender;
-    }
+    private readonly IDataSender _sender = sender;
 
     protected override Task<CommandState> InvokeAsync(ReadOnlyQueue<string> args)
     {

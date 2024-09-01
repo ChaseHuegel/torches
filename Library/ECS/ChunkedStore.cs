@@ -1,3 +1,5 @@
+using Library.Util;
+
 namespace Library.ECS;
 
 internal abstract class ChunkedStore()
@@ -18,7 +20,6 @@ internal class ChunkedStore<T>(int chunkSize) : ChunkedStore
 
     public void SetAt(int chunkIndex, int localEntity, T component1, bool exists)
     {
-        // TODO this is not thread safe
         Chunk<T> chunk;
         if (Chunks.Count <= chunkIndex)
         {
@@ -42,5 +43,20 @@ internal class ChunkedStore<T>(int chunkSize) : ChunkedStore
         chunk.Exists[localEntity] = exists;
         chunk.Count += exists ? 1 : -1;
         //  TODO should chunks get cleaned up when they are empty?
+    }
+
+    public Result<T> GetAt(int chunkIndex, int localEntity)
+    {
+        Chunk<T> chunk;
+        if (Chunks.Count <= chunkIndex)
+        {
+            return new Result<T>();
+        }
+        else
+        {
+            chunk = Chunks[chunkIndex];
+        }
+
+        return new Result<T>(chunk.Exists[localEntity], chunk.Components[localEntity]);
     }
 }

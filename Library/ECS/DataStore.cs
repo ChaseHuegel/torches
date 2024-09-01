@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Library.Util;
 
 namespace Library.ECS;
 
@@ -225,6 +226,20 @@ public class DataStore
         //  TODO determine if lots of chunks with small loops or few chunks with big loops is faster.
         //  TODO based on findings above, perhaps introduce a dynamic switch between Parallel and Synchronous iterations over chunks?
         QueryDynamicInternal(chunks1, chunks2, forEach);
+    }
+
+    public Result<T1> Query<T1>(int entity) where T1 : struct, IDataComponent
+    {
+        lock (_chunkAndStoreLock)
+        {
+            if (!_stores.TryGetValue(typeof(T1), out ChunkedStore? store))
+            {
+                return new Result<T1>();
+            }
+
+            (int chunkIndex, int localEntity) = ToChunkSpace(entity);
+            return ((ChunkedStore<T1>)store).GetAt(chunkIndex, localEntity);
+        }
     }
 
     private void QueryDynamicInternal<T1, T2>(Span<Chunk<T1>> chunks1, Span<Chunk<T2>> chunks2, ForEach<T1, T2> forEach)

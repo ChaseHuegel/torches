@@ -1,5 +1,5 @@
 #version 1.0;
-#namespace Packets.Chat;
+#namespace Packets.Entities;
 
 message EntityPacket
 {

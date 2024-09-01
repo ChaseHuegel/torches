@@ -3,6 +3,7 @@ using Library.DependencyInjection;
 using Networking.Events;
 using Networking.Messaging;
 using Packets.Chat;
+using Packets.Entities;
 
 namespace Networking.DependencyInjection;
 
@@ -12,6 +13,7 @@ public sealed class PacketRegistry : IDryIocModule
     {
         RegisterPacketHandling(typeof(ChatPacket), container);
         RegisterPacketHandling(typeof(TextPacket), container);
+        RegisterPacketHandling(typeof(EntityPacket), container);
     }
 
     private static void RegisterPacketHandling(Type packetType, IContainer container)

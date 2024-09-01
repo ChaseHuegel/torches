@@ -1,41 +1,51 @@
 using System.Net;
+using Library.ECS;
 using Networking.Events;
 using Networking.Services;
 using Swordfish.Library.IO;
+using World.Client.Systems;
 
-namespace World.Server;
+namespace World.Client;
 
-public class Application
+internal class Application
 {
     private readonly ILogger _logger;
-    private readonly TCPFrameServer _tcpService;
+    private readonly TCPFrameClient _tcpClient;
     private readonly IMessageEventProcessor[] _messageEventProcessors;
     private readonly CommandParser _commandParser;
+    private readonly ECSContext _ecs;
 
-    public Application(ILogger logger, TCPFrameServer tcpService, IMessageEventProcessor[] messageEventProcessors, CommandParser commandParser)
+    public Application(ILogger logger, TCPFrameClient tcpClient, IMessageEventProcessor[] messageEventProcessors, CommandParser commandParser, ECSContext ecs)
     {
         _logger = logger;
-        _tcpService = tcpService;
+        _tcpClient = tcpClient;
         _messageEventProcessors = messageEventProcessors;
         _commandParser = commandParser;
+        _ecs = ecs;
         AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
+
+        _ecs.AddSystem<PositionLogSystem>();
     }
 
     public async Task Run()
     {
-
         foreach (IMessageEventProcessor processor in _messageEventProcessors)
         {
             processor.Start();
+            _logger.LogInformation("Started {type}.", processor.GetType());
         }
         _logger.LogInformation("Started {count} message processors.", _messageEventProcessors.Length);
 
-        _tcpService.Start(new IPEndPoint(IPAddress.Any, 1235));
-        _logger.LogInformation("TCP service started.");
+        _tcpClient.Connect(new IPEndPoint(IPAddress.Loopback, 1235));
+        _logger.LogInformation("TCP service connected.");
 
-        while (await ProcessInputAsync(Console.ReadLine())) { }
+        while (await ProcessInputAsync(Console.ReadLine()))
+        {
+            await Task.Delay(50);
+            _ecs.Tick();
+        }
 
-        _logger.LogInformation("Closing server.");
+        _logger.LogInformation("Closing client.");
     }
 
     private async Task<bool> ProcessInputAsync(string? input)

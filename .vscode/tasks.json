@@ -7,6 +7,7 @@
                 "Chat.Server",
                 "Chat.Client",
                 "World.Server",
+                "World.Client",
             ],
             "dependsOrder": "parallel",
             "group": "build",
@@ -50,6 +51,19 @@
                 "run",
                 "--project",
                 "${workspaceFolder}/World.Server/World.Server.csproj"
+            ],
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "World.Client",
+            "command": "dotnet",
+            "type": "process",
+            "group": "build",
+            "args": [
+                // "watch",
+                "run",
+                "--project",
+                "${workspaceFolder}/World.Client/World.Client.csproj"
             ],
             "problemMatcher": "$msCompile"
         },

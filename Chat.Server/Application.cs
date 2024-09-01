@@ -51,6 +51,7 @@ public class Application
             _logger.LogWarning("Unknown command: \"{command}\".", commandResult.OriginalString);
         }
 
+        _logger.LogInformation("Executed: {command}", commandResult.OriginalString);
         return true;
     }
 

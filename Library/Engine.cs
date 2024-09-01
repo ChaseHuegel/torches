@@ -169,6 +169,7 @@ public sealed class Engine : IDisposable
             }
 
             container.Register(typeof(Command), type, reuse: Reuse.Singleton, ifAlreadyRegistered: IfAlreadyRegistered.AppendNewImplementation);
+            _logger.LogInformation("Registered command of type: {type}.", type);
         }
     }
 

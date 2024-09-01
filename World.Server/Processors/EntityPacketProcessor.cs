@@ -6,7 +6,7 @@ using Library.Types;
 using Library.Util;
 using Networking.Events;
 using Networking.LowLevel;
-using Packets.Chat;
+using Packets.Entities;
 
 namespace World.Server.Processors;
 

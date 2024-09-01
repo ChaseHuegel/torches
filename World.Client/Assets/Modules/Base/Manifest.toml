@@ -1,6 +1,6 @@
-ID = "world.server.base"
+ID = "world.client.base"
 Name = "Base"
-Description = "The base module of the World server."
+Description = "The base module of the World client."
 Author = "Chase Huegel"
 Website = "https://github.com/ChaseHuegel"
 Source = "https://github.com/ChaseHuegel/torches"
@@ -10,7 +10,7 @@ ScriptsPath = "Scripts/"
 AssembliesPath = "bin/Debug/net8.0"
 
 Assemblies = [
-    "World.Server.dll",
+    "World.Client.dll",
     "Library.dll",
     "Networking.dll",
 ]

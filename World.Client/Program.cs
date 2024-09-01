@@ -6,7 +6,7 @@ using Networking;
 using Networking.LowLevel;
 using Networking.Services;
 
-namespace World.Server;
+namespace World.Client;
 
 internal class Program : IDryIocModule
 {
@@ -14,7 +14,7 @@ internal class Program : IDryIocModule
     {
         container.Register<Application>();
         container.Register<SessionService>(Reuse.Singleton);
-        container.RegisterMany<TCPFrameServer>(Reuse.Singleton);
+        container.RegisterMany<TCPFrameClient>(Reuse.Singleton);
         container.Register<IParser, DirectParser>(Reuse.Singleton);
         container.Register<IDataProducer, DataProducer>(setup: Setup.With(trackDisposableTransient: true), made: Parameters.Of.Type<IParser>().Type<IDataReceiver[]>());
 
