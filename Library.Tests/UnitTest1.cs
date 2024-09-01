@@ -30,7 +30,7 @@ public class Tests
         public string Tag;
     }
 
-    public struct PositionComponent(float x, float y, float z) : IDataComponent, IComponent
+    public struct LocationComponent(float x, float y, float z) : IDataComponent, IComponent
     {
         public float X = x;
         public float Y = y;
@@ -39,9 +39,9 @@ public class Tests
 
     public struct PhysicsComponent : IDataComponent, IComponent;
 
-    public class GravitySystem(DataStore store) : EntitySystem<PhysicsComponent, PositionComponent>(store)
+    public class GravitySystem(DataStore store) : EntitySystem<PhysicsComponent, LocationComponent>(store)
     {
-        protected override void OnTick(int entity, ref PhysicsComponent physics, ref PositionComponent position)
+        protected override void OnTick(int entity, ref PhysicsComponent physics, ref LocationComponent position)
         {
             position.Y -= 9.8f;
         }
@@ -59,14 +59,14 @@ public class Tests
         {
             for (int i = 0; i < 100_000; i++)
             {
-                int entity = ecs.DataStore.Create(new PhysicsComponent(), new PositionComponent(i, 0, 0));
-                ecs.DataStore.Add(entity, new IdentityComponent() { Name = $"Entity {entity} ({i})" });
+                int entity = ecs.DataStore.Create(new PhysicsComponent(), new LocationComponent(i, 0, 0));
+                ecs.DataStore.AddOrUpdate(entity, new IdentityComponent() { Name = $"Entity {entity} ({i})" });
             }
         }
 
         using (var elapsed = new ElapsedLogger("Queried entities."))
         {
-            ecs.DataStore.Query((int entity, ref IdentityComponent id, ref PositionComponent position) => { });
+            ecs.DataStore.Query((int entity, ref IdentityComponent id, ref LocationComponent position) => { });
         }
 
         using (var elapsed = new ElapsedLogger("Ticked entities."))
@@ -86,7 +86,7 @@ public class Tests
 
         using (var elapsed = new ElapsedLogger("Queried entities."))
         {
-            ecs.DataStore.Query((int entity, ref IdentityComponent id, ref PositionComponent position) => { });
+            ecs.DataStore.Query((int entity, ref IdentityComponent id, ref LocationComponent position) => { });
         }
     }
 
@@ -104,38 +104,38 @@ public class Tests
                 var entity = world.CreateEntity();
                 entity.AddComponent(new IdentityComponent { Name = $"Entity {entity.Id} ({i})" });
                 entity.AddComponent(new PhysicsComponent());
-                entity.AddComponent(new PositionComponent(i, 0, 0));
+                entity.AddComponent(new LocationComponent(i, 0, 0));
             }
         }
 
         using (var elapsed = new ElapsedLogger("Queried entities."))
         {
-            var query = world.Query<IdentityComponent, PositionComponent>();
-            query.ForEachEntity((ref IdentityComponent id, ref PositionComponent loc, Friflo.Engine.ECS.Entity entity) => { });
+            var query = world.Query<IdentityComponent, LocationComponent>();
+            query.ForEachEntity((ref IdentityComponent id, ref LocationComponent loc, Friflo.Engine.ECS.Entity entity) => { });
         }
 
         using (var elapsed = new ElapsedLogger("Ticked entities."))
         {
-            var query = world.Query<PhysicsComponent, PositionComponent>();
-            query.ForEachEntity((ref PhysicsComponent physics, ref PositionComponent loc, Friflo.Engine.ECS.Entity entity) => { loc.Y -= 0.9f; });
+            var query = world.Query<PhysicsComponent, LocationComponent>();
+            query.ForEachEntity((ref PhysicsComponent physics, ref LocationComponent loc, Friflo.Engine.ECS.Entity entity) => { loc.Y -= 0.9f; });
         }
 
         using (var elapsed = new ElapsedLogger("Ticked entities."))
         {
-            var query = world.Query<PhysicsComponent, PositionComponent>();
-            query.ForEachEntity((ref PhysicsComponent physics, ref PositionComponent loc, Friflo.Engine.ECS.Entity entity) => { loc.Y -= 0.9f; });
+            var query = world.Query<PhysicsComponent, LocationComponent>();
+            query.ForEachEntity((ref PhysicsComponent physics, ref LocationComponent loc, Friflo.Engine.ECS.Entity entity) => { loc.Y -= 0.9f; });
         }
 
         using (var elapsed = new ElapsedLogger("Ticked entities."))
         {
-            var query = world.Query<PhysicsComponent, PositionComponent>();
-            query.ForEachEntity((ref PhysicsComponent physics, ref PositionComponent loc, Friflo.Engine.ECS.Entity entity) => { loc.Y -= 0.9f; });
+            var query = world.Query<PhysicsComponent, LocationComponent>();
+            query.ForEachEntity((ref PhysicsComponent physics, ref LocationComponent loc, Friflo.Engine.ECS.Entity entity) => { loc.Y -= 0.9f; });
         }
 
         using (var elapsed = new ElapsedLogger("Queried entities."))
         {
-            var query = world.Query<IdentityComponent, PositionComponent>();
-            query.ForEachEntity((ref IdentityComponent id, ref PositionComponent loc, Friflo.Engine.ECS.Entity entity) => { });
+            var query = world.Query<IdentityComponent, LocationComponent>();
+            query.ForEachEntity((ref IdentityComponent id, ref LocationComponent loc, Friflo.Engine.ECS.Entity entity) => { });
         }
     }
 }

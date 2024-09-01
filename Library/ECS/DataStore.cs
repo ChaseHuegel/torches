@@ -67,7 +67,7 @@ public class DataStore
         }
     }
 
-    public void Add<T1>(int entity, T1 component1) where T1 : struct, IDataComponent
+    public void AddOrUpdate<T1>(int entity, T1 component1) where T1 : struct, IDataComponent
     {
         lock (_chunkAndStoreLock)
         {
@@ -87,7 +87,7 @@ public class DataStore
         }
     }
 
-    public void Add<T1, T2>(int entity, T1 component1, T2 component2)
+    public void AddOrUpdate<T1, T2>(int entity, T1 component1, T2 component2)
         where T1 : struct, IDataComponent
         where T2 : struct, IDataComponent
     {

@@ -1,5 +1,6 @@
 ﻿using Library;
 using Library.DependencyInjection;
+using Library.ECS;
 using Library.Serialization;
 using Networking;
 using Networking.LowLevel;
@@ -16,6 +17,8 @@ internal class Program : IDryIocModule
         container.RegisterMany<TCPFrameServer>(Reuse.Singleton);
         container.Register<IParser, DirectParser>(Reuse.Singleton);
         container.Register<IDataProducer, DataProducer>(setup: Setup.With(trackDisposableTransient: true), made: Parameters.Of.Type<IParser>().Type<IDataReceiver[]>());
+
+        container.Register<ECSContext>();
     }
 
     private static async Task Main(string[] args)

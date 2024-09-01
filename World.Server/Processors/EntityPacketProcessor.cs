@@ -1,4 +1,6 @@
 using Library.Collections;
+using Library.ECS;
+using Library.ECS.Components;
 using Library.Events;
 using Library.Types;
 using Library.Util;
@@ -8,10 +10,11 @@ using Packets.Chat;
 
 namespace World.Server.Processors;
 
-public class EntityPacketProcessor(ILogger logger, IDataSender sender) : IEventProcessor<MessageEventArgs<EntityPacket>>
+public class EntityPacketProcessor(ILogger logger, IDataSender sender, ECSContext ecs) : IEventProcessor<MessageEventArgs<EntityPacket>>
 {
     private readonly ILogger _logger = logger;
     private readonly IDataSender _sender = sender;
+    private readonly ECSContext _ecs = ecs;
 
     public Result<EventBehavior> ProcessEvent(object? sender, MessageEventArgs<EntityPacket> e)
     {
@@ -19,6 +22,8 @@ public class EntityPacketProcessor(ILogger logger, IDataSender sender) : IEventP
         _logger.LogInformation("Recv entity {entity} from {sender}.", entity.ID, e.Sender);
 
         SendEntityPacket(entity, new All<Session>());
+
+        _ecs.DataStore.AddOrUpdate(entity.ID, new PositionComponent(entity.Position.X, entity.Position.Y, entity.Position.Z));
 
         return new Result<EventBehavior>(true, EventBehavior.Continue);
     }

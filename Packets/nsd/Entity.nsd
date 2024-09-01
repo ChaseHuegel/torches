@@ -4,7 +4,7 @@
 message EntityPacket
 {
     byte Version;
-    uint? ID;
+    int ID;
     string Name;
     Position Position;
     float Heading;
