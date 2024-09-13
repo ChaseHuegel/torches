@@ -1,0 +1,6 @@
+"Language" = "en"
+
+[Translations]
+"Error.Login.InvalidToken" = "Invalid session token."
+"Error.Login.AlreadyLoggedIn" = "Account is already logged in."
+"Error.Login.Failed" = "There was an issue logging in."

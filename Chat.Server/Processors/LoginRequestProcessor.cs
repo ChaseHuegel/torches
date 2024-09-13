@@ -1,0 +1,60 @@
+using Library.Events;
+using Library.Types;
+using Library.Util;
+using Networking.Events;
+using Networking.LowLevel;
+using Networking.Services;
+using Packets.Auth;
+
+namespace Chat.Server.Processors;
+
+public class LoginRequestProcessor(SmartFormatter formatter, ILoginService loginService, IDataSender sender, ILogger logger) : IEventProcessor<MessageEventArgs<LoginRequestPacket>>
+{
+    private readonly SmartFormatter _formatter = formatter;
+    private readonly ILoginService _loginService = loginService;
+    private readonly IDataSender _sender = sender;
+    private readonly ILogger _logger = logger;
+
+    public Result<EventBehavior> ProcessEvent(object? sender, MessageEventArgs<LoginRequestPacket> e)
+    {
+        LoginRequestPacket loginRequest = e.Message;
+        _logger.LogInformation("Login requested by {sender}.", e.Sender);
+
+        LoginResponsePacket loginResponse;
+        if (_loginService.IsLoggedIn(e.Sender) || _loginService.IsLoggedIn(loginRequest.Token))
+        {
+            _logger.LogInformation("Login from {sender} rejected: Already logged in.", e.Sender);
+            loginResponse = new LoginResponsePacket(1, false, _formatter.Format("{:L:Error.Login.AlreadyLoggedIn}"));
+        }
+        else if (!_loginService.ValidateToken(loginRequest.Token))
+        {
+            _logger.LogInformation("Login from {sender} rejected: Token invalid.", e.Sender);
+            loginResponse = new LoginResponsePacket(1, false, _formatter.Format("{:L:Error.Login.InvalidToken}"));
+        }
+        else if (!_loginService.Login(e.Sender, loginRequest.Token))
+        {
+            _logger.LogInformation("Login from {sender} rejected: Login failed.", e.Sender);
+            loginResponse = new LoginResponsePacket(1, false, _formatter.Format("{:L:Error.Login.Failed}"));
+        }
+        else
+        {
+            loginResponse = new LoginResponsePacket(1, true, null);
+        }
+
+        Result sendResult = SendLoginResponse(loginResponse, e.Sender);
+        if (!sendResult)
+        {
+            _logger.LogError("Failed to send a login response to {Sender}.\n{Message}", e.Sender, sendResult.Message);
+            return new Result<EventBehavior>(false, EventBehavior.Continue, sendResult.Message);
+        }
+
+        _logger.LogInformation("Login from {sender} accepted.", e.Sender);
+        return new Result<EventBehavior>(true, EventBehavior.Continue);
+    }
+
+    private Result SendLoginResponse(LoginResponsePacket loginResponse, Session target)
+    {
+        var packet = new Packet(PacketType.Text, loginResponse.Serialize());
+        return _sender.Send(packet.Serialize(), target);
+    }
+}
