@@ -6,6 +6,7 @@ using Library.Util;
 using Networking;
 using Networking.Events;
 using Networking.LowLevel;
+using Networking.Services;
 using Packets.Chat;
 
 namespace Chat.Server.Processors;
@@ -14,13 +15,15 @@ public class ChatPacketProcessor : IEventProcessor<MessageEventArgs<ChatPacket>>
 {
     private readonly SmartFormatter _formatter;
     private readonly SessionService _sessionService;
+    private readonly ILoginService _loginService;
     private readonly IDataSender _sender;
     private readonly ILogger _logger;
 
-    public ChatPacketProcessor(SmartFormatter formatter, SessionService sessionService, IDataSender sender, ILogger logger)
+    public ChatPacketProcessor(SmartFormatter formatter, SessionService sessionService, ILoginService loginService, IDataSender sender, ILogger logger)
     {
         _formatter = formatter;
         _sessionService = sessionService;
+        _loginService = loginService;
         _sender = sender;
         _logger = logger;
     }
@@ -28,19 +31,34 @@ public class ChatPacketProcessor : IEventProcessor<MessageEventArgs<ChatPacket>>
     public Result<EventBehavior> ProcessEvent(object? sender, MessageEventArgs<ChatPacket> e)
     {
         ChatPacket chat = e.Message;
+
+        if (!_loginService.IsLoggedIn(e.Sender))
+        {
+            var message = new ChatMessage((int)ChatChannel.System, new Session(), e.Sender, _formatter.Format("{:L:Auth.Login.LoginRequired}"));
+            var text = _formatter.Format("{:L:Chat.Format.Self}", message);
+            Result sendResult = SendTextMessage(new TextPacket(1, ChatChannel.System, text), e.Sender);
+            if (!sendResult)
+            {
+                _logger.LogError("Failed to send a message to {Sender}.\n{Message}", e.Sender, sendResult.Message);
+                return new Result<EventBehavior>(false, EventBehavior.Continue, sendResult.Message);
+            }
+
+            return new Result<EventBehavior>(false, EventBehavior.Continue, "User is not logged in.");
+        }
+
         _logger.LogInformation("Recv chat on channel: {Channel}, from: {Sender}, to: {DestinationID}, value: \"{Value}\"", chat.Channel, e.Sender, chat.DestinationID, chat.Value);
 
-        Result<ChatPacket> sendResult = SendTextMessage(chat, e.Sender);
-        if (!sendResult)
+        Result<ChatPacket> relayResult = RelayChatAsText(chat, e.Sender);
+        if (!relayResult)
         {
-            _logger.LogError("Failed to send a chat on channel: {Channel}, from: {Sender}.\n{Message}", chat.Channel, e.Sender, sendResult.Message);
-            return new Result<EventBehavior>(false, EventBehavior.Continue, sendResult.Message);
+            _logger.LogError("Failed to relay chat on channel: {Channel}, from: {Sender}.\n{Message}", chat.Channel, e.Sender, relayResult.Message);
+            return new Result<EventBehavior>(false, EventBehavior.Continue, relayResult.Message);
         }
 
         return new Result<EventBehavior>(true, EventBehavior.Continue);
     }
 
-    private Result<ChatPacket> SendTextMessage(ChatPacket chat, Session sender)
+    private Result<ChatPacket> RelayChatAsText(ChatPacket chat, Session sender)
     {
         switch (chat.Channel)
         {
@@ -93,7 +111,7 @@ public class ChatPacketProcessor : IEventProcessor<MessageEventArgs<ChatPacket>>
 
         Result sendToSender = SendTextMessage(messageToSender, sender);
         //  TODO identify local targets
-        Result sendToOthers = SendTextMessage(messageToOthers, new Except<Session>(sender));
+        Result sendToOthers = SendTextMessage(messageToOthers, new Where<Session>(session => session.ID != sender.ID && _loginService.IsLoggedIn(session)));
         if (!sendToSender || !sendToOthers)
         {
             return new Result<ChatPacket>(false, chat, StringUtils.JoinValid('\n', sendToSender.Message, sendToOthers.Message));

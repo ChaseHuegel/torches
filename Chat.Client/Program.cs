@@ -1,5 +1,4 @@
-﻿using Chat.Client;
-using Library;
+﻿using Library;
 using Library.DependencyInjection;
 using Library.Serialization;
 using Networking;

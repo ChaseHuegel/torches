@@ -24,21 +24,21 @@ public class LoginRequestProcessor(SmartFormatter formatter, ILoginService login
         if (_loginService.IsLoggedIn(e.Sender) || _loginService.IsLoggedIn(loginRequest.Token))
         {
             _logger.LogInformation("Login from {sender} rejected: Already logged in.", e.Sender);
-            loginResponse = new LoginResponsePacket(1, false, _formatter.Format("{:L:Error.Login.AlreadyLoggedIn}"));
+            loginResponse = new LoginResponsePacket(1, false, _formatter.Format("{:L:Auth.Login.AlreadyLoggedIn}"));
         }
         else if (!_loginService.ValidateToken(loginRequest.Token))
         {
             _logger.LogInformation("Login from {sender} rejected: Token invalid.", e.Sender);
-            loginResponse = new LoginResponsePacket(1, false, _formatter.Format("{:L:Error.Login.InvalidToken}"));
+            loginResponse = new LoginResponsePacket(1, false, _formatter.Format("{:L:Auth.Login.InvalidToken}"));
         }
         else if (!_loginService.Login(e.Sender, loginRequest.Token))
         {
             _logger.LogInformation("Login from {sender} rejected: Login failed.", e.Sender);
-            loginResponse = new LoginResponsePacket(1, false, _formatter.Format("{:L:Error.Login.Failed}"));
+            loginResponse = new LoginResponsePacket(1, false, _formatter.Format("{:L:Auth.Login.Failed}"));
         }
         else
         {
-            loginResponse = new LoginResponsePacket(1, true, null);
+            loginResponse = new LoginResponsePacket(1, true, _formatter.Format("{:L:Auth.Login.Success}"));
         }
 
         Result sendResult = SendLoginResponse(loginResponse, e.Sender);
@@ -54,7 +54,7 @@ public class LoginRequestProcessor(SmartFormatter formatter, ILoginService login
 
     private Result SendLoginResponse(LoginResponsePacket loginResponse, Session target)
     {
-        var packet = new Packet(PacketType.Text, loginResponse.Serialize());
+        var packet = new Packet(PacketType.LoginResponse, loginResponse.Serialize());
         return _sender.Send(packet.Serialize(), target);
     }
 }

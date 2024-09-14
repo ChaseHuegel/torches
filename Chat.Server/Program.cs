@@ -1,5 +1,4 @@
-﻿using Chat.Server;
-using Library;
+﻿using Library;
 using Library.DependencyInjection;
 using Library.Serialization;
 using Networking;
@@ -14,6 +13,7 @@ internal class Program : IDryIocModule
     {
         container.Register<Application>();
         container.Register<SessionService>(Reuse.Singleton);
+        container.Register<ILoginService, LoginService>(Reuse.Singleton);
         container.RegisterMany<TCPFrameServer>(Reuse.Singleton);
         container.Register<IParser, DirectParser>(Reuse.Singleton);
         container.Register<IDataProducer, DataProducer>(setup: Setup.With(trackDisposableTransient: true), made: Parameters.Of.Type<IParser>().Type<IDataReceiver[]>());

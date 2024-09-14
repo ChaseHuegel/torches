@@ -9,8 +9,11 @@ message Packet
 
 enum PacketType
 {
-    Null        = 0;
-    Chat        = 100;
-    Text        = 101;
-    Entity      = 200;
+    Null            = 0;
+    Chat            = 100;
+    Text            = 101;
+    Entity          = 200;
+    LoginRequest    = 300;
+    LoginResponse   = 301;
+    Logout          = 302;
 }

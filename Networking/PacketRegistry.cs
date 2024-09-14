@@ -23,7 +23,7 @@ public sealed class PacketRegistry : IDryIocModule
     private static void RegisterPacketHandling(Type packetType, IContainer container)
     {
         Type packetConsumer = typeof(PacketConsumer<>).MakeGenericType([packetType]);
-        container.RegisterMany(packetConsumer.GetInterfaces(), packetConsumer, reuse: Reuse.Singleton, setup: Setup.With(trackDisposableTransient: true));
+        container.RegisterMany([.. packetConsumer.GetInterfaces(), packetConsumer], packetConsumer, reuse: Reuse.Singleton, setup: Setup.With(trackDisposableTransient: true));
 
         Type messageProducerInterface = typeof(IMessageProducer<>).MakeGenericType([packetType]);
         Type messageProducer = typeof(MessageProducer<>).MakeGenericType([packetType]);
