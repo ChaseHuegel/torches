@@ -5,18 +5,15 @@ using Networking.Messaging;
 
 namespace Networking.Events;
 
-public sealed class MessageEventProcessor<TMessage> : IMessageEventProcessor, IDisposable
+public sealed class MessageEventProcessor<TMessage>(
+    ILogger logger,
+    IMessageConsumer<TMessage> consumer,
+    IEventProcessor<MessageEventArgs<TMessage>>[] processors
+) : IMessageEventProcessor, IDisposable
 {
-    private readonly ILogger _logger;
-    private readonly IMessageConsumer<TMessage> _consumer;
-    private readonly IEventProcessor<MessageEventArgs<TMessage>>[] _processors;
-
-    public MessageEventProcessor(ILogger logger, IMessageConsumer<TMessage> consumer, IEventProcessor<MessageEventArgs<TMessage>>[] processors)
-    {
-        _logger = logger;
-        _consumer = consumer;
-        _processors = processors;
-    }
+    private readonly ILogger _logger = logger;
+    private readonly IMessageConsumer<TMessage> _consumer = consumer;
+    private readonly IEventProcessor<MessageEventArgs<TMessage>>[] _processors = processors;
 
     public void Start()
     {

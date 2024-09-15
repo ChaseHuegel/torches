@@ -9,20 +9,16 @@ using Path = Swordfish.Library.IO.Path;
 
 namespace Library.Services;
 
-public class ModulesLoader : IModulesLoader
+public class ModulesLoader(
+    ILogger logger,
+    IFileService fileService,
+    ConfigurationProvider configurationProvider
+) : IModulesLoader
 {
-    private readonly ILogger _logger;
-    private readonly IFileService _fileService;
-    private readonly ModuleOptions? _options;
-    private readonly IReadOnlyCollection<ParsedFile<ModuleManfiest>> _manfiests;
-
-    public ModulesLoader(ILogger logger, IFileService fileService, ConfigurationProvider configurationProvider)
-    {
-        _logger = logger;
-        _fileService = fileService;
-        _options = configurationProvider.GetModOptions()?.Value;
-        _manfiests = configurationProvider.GetModuleManifests();
-    }
+    private readonly ILogger _logger = logger;
+    private readonly IFileService _fileService = fileService;
+    private readonly ModuleOptions? _options = configurationProvider.GetModOptions()?.Value;
+    private readonly IReadOnlyCollection<ParsedFile<ModuleManfiest>> _manfiests = configurationProvider.GetModuleManifests();
 
     public void Load(Action<Assembly> hookCallback)
     {

@@ -11,22 +11,19 @@ using Packets.Chat;
 
 namespace Chat.Server.Processors;
 
-public class ChatPacketProcessor : IEventProcessor<MessageEventArgs<ChatPacket>>
+public class ChatPacketProcessor(
+    SmartFormatter formatter,
+    SessionService sessionService,
+    ILoginService loginService,
+    IDataSender sender,
+    ILogger logger
+) : IEventProcessor<MessageEventArgs<ChatPacket>>
 {
-    private readonly SmartFormatter _formatter;
-    private readonly SessionService _sessionService;
-    private readonly ILoginService _loginService;
-    private readonly IDataSender _sender;
-    private readonly ILogger _logger;
-
-    public ChatPacketProcessor(SmartFormatter formatter, SessionService sessionService, ILoginService loginService, IDataSender sender, ILogger logger)
-    {
-        _formatter = formatter;
-        _sessionService = sessionService;
-        _loginService = loginService;
-        _sender = sender;
-        _logger = logger;
-    }
+    private readonly SmartFormatter _formatter = formatter;
+    private readonly SessionService _sessionService = sessionService;
+    private readonly ILoginService _loginService = loginService;
+    private readonly IDataSender _sender = sender;
+    private readonly ILogger _logger = logger;
 
     public Result<EventBehavior> ProcessEvent(object? sender, MessageEventArgs<ChatPacket> e)
     {

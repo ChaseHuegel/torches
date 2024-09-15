@@ -10,7 +10,12 @@ using Packets.Chat;
 
 namespace Chat.Server.Processors;
 
-public class LoginRequestProcessor(SmartFormatter formatter, ILoginService loginService, IDataSender sender, ILogger logger) : IEventProcessor<MessageEventArgs<LoginRequestPacket>>
+public class LoginRequestProcessor(
+    SmartFormatter formatter,
+    ILoginService loginService,
+    IDataSender sender,
+    ILogger logger
+) : IEventProcessor<MessageEventArgs<LoginRequestPacket>>
 {
     private readonly SmartFormatter _formatter = formatter;
     private readonly ILoginService _loginService = loginService;

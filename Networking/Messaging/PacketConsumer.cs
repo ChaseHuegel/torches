@@ -5,11 +5,11 @@ using Packets;
 
 namespace Networking.Messaging;
 
-public class PacketConsumer<T> : MessageConsumer<T>
+public class PacketConsumer<T>(
+    IPacketSerializer<T> serializer,
+    IDataProducer[] dataProducers
+) : MessageConsumer<T>(serializer, dataProducers)
 {
-    public PacketConsumer(IPacketSerializer<T> serializer, IDataProducer[] dataProducers)
-        : base(serializer, dataProducers) { }
-
     public PacketAwaiter<T> GetPacketAwaiter()
     {
         return new PacketAwaiter<T>(this);
