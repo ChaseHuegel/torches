@@ -1,4 +1,3 @@
-using System.Runtime.CompilerServices;
 using Networking.Events;
 using Networking.LowLevel;
 using Networking.Serialization;
