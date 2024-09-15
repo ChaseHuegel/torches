@@ -1,7 +1,7 @@
 "Language" = "en"
 
 [Translations]
-"Auth.Login.Success" = "Invalid session token."
+"Auth.Login.Success" = "Logged in successfully."
 "Auth.Login.InvalidToken" = "Invalid session token."
 "Auth.Login.AlreadyLoggedIn" = "Account is already logged in."
 "Auth.Login.Failed" = "There was an issue logging in."

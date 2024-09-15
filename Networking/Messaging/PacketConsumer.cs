@@ -16,11 +16,6 @@ public class PacketConsumer<T> : MessageConsumer<T>
         return new PacketAwaiter<T>(this);
     }
 
-    public TaskAwaiter<T> GetAwaiter()
-    {
-        return new PacketAwaiter<T>(this).GetAwaiter();
-    }
-
     protected override void OnDataReceived(object? sender, DataEventArgs e)
     {
         Packet packet = Packet.Deserialize(e.Data, 0, e.Data.Length);
@@ -30,7 +25,6 @@ public class PacketConsumer<T> : MessageConsumer<T>
             return;
         }
 
-        Console.WriteLine($"got packet: {packet.Type}");
         base.OnDataReceived(sender, new DataEventArgs(packet.Data, e.Sender));
     }
 }

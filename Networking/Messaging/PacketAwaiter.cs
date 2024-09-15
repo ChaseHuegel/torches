@@ -1,38 +1,31 @@
 
-using System.Runtime.CompilerServices;
 using Networking.Events;
+using Swordfish;
 
 namespace Networking.Messaging;
 
-public readonly struct PacketAwaiter<T> : IDisposable
+public class PacketAwaiter<T>
 {
     private readonly IMessageConsumer<T> _consumer;
-    private readonly TaskCompletionSource<T> _taskCompletionSource;
+    private readonly SemaphoreSlim _semaphore = new(0, 1);
+    private Optional<T> _result;
 
     public PacketAwaiter(IMessageConsumer<T> consumer)
     {
-        _taskCompletionSource = new TaskCompletionSource<T>();
         _consumer = consumer;
         _consumer.NewMessage += OnNewMessage;
     }
 
-    public readonly TaskAwaiter<T> GetAwaiter()
+    public async Task<T> WaitAsync()
     {
-        return _taskCompletionSource.Task.GetAwaiter();
-    }
-
-    public void Dispose()
-    {
-        _consumer.NewMessage -= OnNewMessage;
-        if (!_taskCompletionSource.Task.IsCompleted)
-        {
-            _taskCompletionSource.SetException(new ObjectDisposedException(nameof(PacketAwaiter<T>)));
-        }
+        await _semaphore.WaitAsync();
+        return _result.Value;
     }
 
     private void OnNewMessage(object? sender, MessageEventArgs<T> e)
     {
         _consumer.NewMessage -= OnNewMessage;
-        _taskCompletionSource.SetResult(e.Message);
+        _result = new Optional<T>(e.Message);
+        _semaphore.Release();
     }
 }

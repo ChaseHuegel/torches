@@ -28,10 +28,10 @@ public class LoginCommand(IDataSender sender, PacketConsumer<LoginResponsePacket
         }
 
         var packet = new Packet(PacketType.LoginRequest, new LoginRequestPacket(1, token).Serialize());
-        using var loginResponseListener = _loginResponseConsumer.GetPacketAwaiter();
+        var loginResponseAwaiter = _loginResponseConsumer.GetPacketAwaiter();
 
         _sender.Send(packet.Serialize(), new All<Session>());
-        LoginResponsePacket loginResponse = await loginResponseListener;
+        LoginResponsePacket loginResponse = await loginResponseAwaiter.WaitAsync();
 
         return loginResponse.Success ? CommandState.Success : CommandState.Failure;
     }
