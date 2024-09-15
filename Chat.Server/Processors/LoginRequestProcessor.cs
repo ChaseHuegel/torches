@@ -1,3 +1,4 @@
+using Chat.Server.Types;
 using Library.Collections;
 using Library.Events;
 using Library.Types;
@@ -55,7 +56,8 @@ public class LoginRequestProcessor(
             return new Result<EventBehavior>(false, EventBehavior.Continue, sendResult.Message);
         }
 
-        var messageToOthers = new TextPacket(1, ChatChannel.System, _formatter.Format("{:L:Notifications.UserLoggedIn}", e.Sender));
+        var message = new ChatMessage((int)ChatChannel.System, default, e.Sender, _formatter.Format("{:L:Notifications.UserLoggedIn}", e.Sender));
+        var messageToOthers = new TextPacket(1, ChatChannel.System, _formatter.Format("{:L:Chat.Format.Other}", message));
         sendResult = SendTextMessage(messageToOthers, new Except<Session>(e.Sender));
         if (!sendResult)
         {
