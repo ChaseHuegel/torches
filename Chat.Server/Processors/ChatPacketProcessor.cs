@@ -111,7 +111,7 @@ public class ChatPacketProcessor : IEventProcessor<MessageEventArgs<ChatPacket>>
 
         Result sendToSender = SendTextMessage(messageToSender, sender);
         //  TODO identify local targets
-        Result sendToOthers = SendTextMessage(messageToOthers, new Where<Session>(session => session.ID != sender.ID && _loginService.IsLoggedIn(session)));
+        Result sendToOthers = SendTextMessage(messageToOthers, new Except<Session>(sender));
         if (!sendToSender || !sendToOthers)
         {
             return new Result<ChatPacket>(false, chat, StringUtils.JoinValid('\n', sendToSender.Message, sendToOthers.Message));
@@ -145,6 +145,6 @@ public class ChatPacketProcessor : IEventProcessor<MessageEventArgs<ChatPacket>>
     private Result SendTextMessage(TextPacket text, IFilter<Session> filter)
     {
         var packet = new Packet(PacketType.Text, text.Serialize());
-        return _sender.Send(packet.Serialize(), filter);
+        return _sender.Send(packet.Serialize(), new Where<Session>(session => filter.Allowed(session) && _loginService.IsLoggedIn(session)));
     }
 }

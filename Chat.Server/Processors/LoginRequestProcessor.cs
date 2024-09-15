@@ -1,3 +1,4 @@
+using Library.Collections;
 using Library.Events;
 using Library.Types;
 using Library.Util;
@@ -5,6 +6,7 @@ using Networking.Events;
 using Networking.LowLevel;
 using Networking.Services;
 using Packets.Auth;
+using Packets.Chat;
 
 namespace Chat.Server.Processors;
 
@@ -48,6 +50,13 @@ public class LoginRequestProcessor(SmartFormatter formatter, ILoginService login
             return new Result<EventBehavior>(false, EventBehavior.Continue, sendResult.Message);
         }
 
+        var messageToOthers = new TextPacket(1, ChatChannel.System, _formatter.Format("{:L:Notifications.UserLoggedIn}", e.Sender));
+        sendResult = SendTextMessage(messageToOthers, new Except<Session>(e.Sender));
+        if (!sendResult)
+        {
+            _logger.LogError("Failed to notify other users of a login.\n{Message}", sendResult.Message);
+        }
+
         _logger.LogInformation("Login from {sender} accepted.", e.Sender);
         return new Result<EventBehavior>(true, EventBehavior.Continue);
     }
@@ -56,5 +65,11 @@ public class LoginRequestProcessor(SmartFormatter formatter, ILoginService login
     {
         var packet = new Packet(PacketType.LoginResponse, loginResponse.Serialize());
         return _sender.Send(packet.Serialize(), target);
+    }
+
+    private Result SendTextMessage(TextPacket text, IFilter<Session> filter)
+    {
+        var packet = new Packet(PacketType.Text, text.Serialize());
+        return _sender.Send(packet.Serialize(), new Where<Session>(session => filter.Allowed(session) && _loginService.IsLoggedIn(session)));
     }
 }

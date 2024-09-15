@@ -1,0 +1,5 @@
+"Language" = "en"
+
+[Translations]
+"Notifications.UserLoggedIn" = "{0} has joined."
+"Notifications.UserLoggedOut" = "{0} has left."
