@@ -37,9 +37,14 @@ public class LoginService : ILoginService
     {
         lock (_loginsLock)
         {
-            if (IsLoggedIn(session) || IsLoggedIn(token))
+            if (IsLoggedIn(token))
             {
                 return new Result(false, "Account is already logged in.");
+            }
+
+            if (IsLoggedIn(session))
+            {
+                return new Result(false, "Session is already logged into another account.");
             }
 
             if (!ValidateToken(token))
