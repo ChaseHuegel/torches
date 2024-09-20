@@ -5,6 +5,7 @@ namespace Networking.Services;
 
 public class LoginService : ILoginService
 {
+    //  TODO implement login expiration
     private readonly Dictionary<Session, string> _logins = [];
     private readonly object _loginsLock = new();
 
@@ -58,18 +59,13 @@ public class LoginService : ILoginService
         }
     }
 
-    public Result Logout(Session session, string token)
+    public Result Logout(Session session)
     {
         lock (_loginsLock)
         {
-            if (!IsLoggedIn(session) || !IsLoggedIn(token))
+            if (!IsLoggedIn(session))
             {
-                return new Result(false, "Account is not logged in.");
-            }
-
-            if (!ValidateToken(token))
-            {
-                return new Result(false, "Invalid token.");
+                return new Result(false, "Session is not logged into an account.");
             }
 
             _logins.Remove(session);

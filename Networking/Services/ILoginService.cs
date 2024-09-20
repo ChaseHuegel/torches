@@ -10,5 +10,5 @@ public interface ILoginService
     Result IsLoggedIn(string token);
 
     Result Login(Session session, string token);
-    Result Logout(Session session, string token);
+    Result Logout(Session session);
 }
