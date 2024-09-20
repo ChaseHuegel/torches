@@ -56,6 +56,8 @@ public class LoginRequestPacketProcessor(
             return new Result<EventBehavior>(false, EventBehavior.Continue, sendResult.Message);
         }
 
+        _logger.LogInformation("Login from {sender} accepted.", e.Sender);
+
         var message = new ChatMessage((int)ChatChannel.System, default, e.Sender, _formatter.Format("{:L:Notifications.UserLoggedIn}", e.Sender));
         var messageToOthers = new TextPacket(1, ChatChannel.System, _formatter.Format("{:L:Chat.Format.Other}", message));
         sendResult = SendTextMessage(messageToOthers, new Except<Session>(e.Sender));
@@ -64,7 +66,6 @@ public class LoginRequestPacketProcessor(
             _logger.LogError("Failed to notify other users of a login.\n{Message}", sendResult.Message);
         }
 
-        _logger.LogInformation("Login from {sender} accepted.", e.Sender);
         return new Result<EventBehavior>(true, EventBehavior.Continue);
     }
 
