@@ -11,7 +11,7 @@ using Packets.Chat;
 
 namespace Chat.Server.Processors;
 
-public class LoginRequestProcessor(
+public class LoginRequestPacketProcessor(
     SmartFormatter formatter,
     ILoginService loginService,
     IDataSender sender,
