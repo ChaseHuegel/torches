@@ -1,4 +1,5 @@
-﻿using Library;
+﻿using Chat.Server.IO;
+using Library;
 using Library.DependencyInjection;
 using Library.Serialization;
 using Networking;
@@ -12,6 +13,8 @@ internal class Program : IDryIocModule
     public void Load(IContainer container)
     {
         container.Register<Application>();
+        container.Register<IPacketProtocol, PacketProtocolRev1>(Reuse.Singleton);
+        container.Register<ChatMessenger>(Reuse.Singleton);
         container.Register<SessionService>(Reuse.Singleton);
         container.Register<ILoginService, LoginService>(Reuse.Singleton);
         container.RegisterMany<TCPFrameServer>(Reuse.Singleton);
