@@ -1,10 +1,8 @@
 using Chat.Server.IO;
-using Chat.Server.Types;
 using Library.Collections;
 using Library.Types;
 using Library.Util;
 using Networking.Events;
-using Networking.LowLevel;
 using Networking.Services;
 using Packets.Auth;
 using Packets.Chat;
@@ -12,11 +10,12 @@ using Packets.Chat;
 namespace Chat.Server.Processors;
 
 public class LogoutPacketProcessor(
+    ChatMessenger chat,
     SmartFormatter formatter,
     ILoginService loginService,
     IPacketProtocol protocol,
     ILogger logger
-) : PacketProcessor<LogoutPacket>(formatter, loginService, protocol, logger)
+) : PacketProcessor<LogoutPacket>(chat, formatter, loginService, protocol, logger)
 {
     protected override Result<EventBehavior> ProcessPacket(MessageEventArgs<LogoutPacket> e)
     {
@@ -31,12 +30,10 @@ public class LogoutPacketProcessor(
 
         _logger.LogInformation("Logout from {Sender} accepted.", e.Sender);
 
-        var message = new ChatMessage((int)ChatChannel.System, default, e.Sender, _formatter.Format("{:L:Notifications.UserLoggedOut}", e.Sender));
-        var messageToOthers = new TextPacket(ChatChannel.System, _formatter.Format("{:L:Chat.Format.Other}", message));
-        Result sendLoggedOut = _protocol.Send(messageToOthers, new Except<Session>(e.Sender));
-        if (!sendLoggedOut)
+        Result notifyOthers = _chat.Broadcast(ChatChannel.System, _formatter.Format("{:L:Notifications.UserLoggedOut}", e.Sender), new Except<Session>(e.Sender));
+        if (!notifyOthers)
         {
-            _logger.LogError("Failed to notify other users of a logout.\n{Message}", sendLoggedOut.Message);
+            _logger.LogError("Failed to notify other users of a logout.\n{Message}", notifyOthers.Message);
         }
 
         return new Result<EventBehavior>(true, EventBehavior.Continue);

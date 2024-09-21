@@ -11,12 +11,13 @@ using Packets.Chat;
 namespace Chat.Server.Processors;
 
 public class ChatPacketProcessor(
-    SmartFormatter formatter,
     SessionService sessionService,
+    ChatMessenger chat,
+    SmartFormatter formatter,
     ILoginService loginService,
     IPacketProtocol protocol,
     ILogger logger
-) : PacketProcessor<ChatPacket>(formatter, loginService, protocol, logger)
+) : PacketProcessor<ChatPacket>(chat, formatter, loginService, protocol, logger)
 {
     private readonly SessionService _sessionService = sessionService;
 
@@ -25,45 +26,46 @@ public class ChatPacketProcessor(
         ChatPacket chat = e.Message;
         _logger.LogInformation("Recv chat on channel: {Channel}, from: {Sender}, to: {DestinationID}, value: \"{Value}\"", chat.Channel, e.Sender, chat.DestinationID, chat.Value);
 
-        Result<ChatPacket> relayResult = RelayChatAsText(chat, e.Sender);
-        if (!relayResult)
+        Result relay = RelayChatAsText(chat, e.Sender);
+        if (!relay)
         {
-            _logger.LogError("Failed to relay chat on channel: {Channel}, from: {Sender}.\n{Message}", chat.Channel, e.Sender, relayResult.Message);
-            return new Result<EventBehavior>(false, EventBehavior.Continue, relayResult.Message);
+            _logger.LogError("Failed to relay chat on channel: {Channel}, from: {Sender}.\n{Message}", chat.Channel, e.Sender, relay.Message);
+            return new Result<EventBehavior>(false, EventBehavior.Continue, relay.Message);
         }
 
         return new Result<EventBehavior>(true, EventBehavior.Continue);
     }
 
-    private Result<ChatPacket> RelayChatAsText(ChatPacket chat, Session sender)
+    private Result RelayChatAsText(ChatPacket chat, Session sender)
     {
         switch (chat.Channel)
         {
             case ChatChannel.Whisper:
-                return SendWhisper(chat, sender);
+                return RelayWhisper(chat, sender);
             case ChatChannel.Local:
-                return SendLocalBroadcast(chat, sender);
+                //  TODO filter to nearby targets
+                return RelayOnChannel(chat.Channel, sender, chat.Value);
             case ChatChannel.System:
             case ChatChannel.Global:
             case ChatChannel.Help:
             case ChatChannel.Trade:
-                return SendGlobalBroadcast(chat, sender);
+                return RelayOnChannel(chat.Channel, sender, chat.Value);
             default:
-                return new Result<ChatPacket>(false, chat, $"Unsupported {nameof(ChatChannel)}: {chat.Channel}.");
+                return new Result(false, $"Unsupported {nameof(ChatChannel)}: {chat.Channel}.");
         }
     }
 
-    private Result<ChatPacket> SendWhisper(ChatPacket chat, Session sender)
+    private Result RelayWhisper(ChatPacket chat, Session sender)
     {
         if (chat.DestinationID == null)
         {
-            return new Result<ChatPacket>(false, chat, $"No target {nameof(ChatPacket.DestinationID)} provided.");
+            return new Result(false, $"No target {nameof(ChatPacket.DestinationID)} provided.");
         }
 
         Result<Session> target = _sessionService.Get(chat.DestinationID.Value);
         if (!target)
         {
-            return new Result<ChatPacket>(false, chat, $"Session does not exist for {nameof(ChatPacket.DestinationID)}: {chat.DestinationID}.");
+            return new Result(false, $"Session does not exist for {nameof(ChatPacket.DestinationID)}: {chat.DestinationID}.");
         }
 
         var message = new ChatMessage((int)chat.Channel, sender, target, chat.Value);
@@ -74,42 +76,25 @@ public class ChatPacketProcessor(
         Result sendToTarget = _protocol.Send(messageToTarget, target);
         if (!sendToSender || !sendToTarget)
         {
-            return new Result<ChatPacket>(false, chat, StringUtils.JoinValid('\n', sendToSender.Message, sendToTarget.Message));
+            return new Result(false, StringUtils.JoinValid('\n', sendToSender.Message, sendToTarget.Message));
         }
 
-        return new Result<ChatPacket>(true, chat);
+        return new Result(true);
     }
 
-    private Result<ChatPacket> SendLocalBroadcast(ChatPacket chat, Session sender)
+    private Result RelayOnChannel(ChatChannel channel, Session sender, string message)
     {
-        var message = new ChatMessage((int)chat.Channel, sender, null, chat.Value);
-        var messageToSender = new TextPacket(chat.Channel, _formatter.Format("{:L:Chat.Format.Self}", message));
-        var messageToOthers = new TextPacket(chat.Channel, _formatter.Format("{:L:Chat.Format.Other}", message));
+        var chat = new ChatMessage((int)channel, sender, null, message);
+        var textToSender = new TextPacket(channel, _formatter.Format("{:L:Chat.Format.Self}", chat));
+        var textToOthers = new TextPacket(channel, _formatter.Format("{:L:Chat.Format.Other}", chat));
 
-        Result sendToSender = _protocol.Send(messageToSender, sender);
-        //  TODO identify local targets
-        Result sendToOthers = _protocol.Send(messageToOthers, new Except<Session>(sender));
+        Result sendToSender = _protocol.Send(textToSender, sender);
+        Result sendToOthers = _protocol.Send(textToOthers, new Except<Session>(sender));
         if (!sendToSender || !sendToOthers)
         {
-            return new Result<ChatPacket>(false, chat, StringUtils.JoinValid('\n', sendToSender.Message, sendToOthers.Message));
+            return new Result(false, StringUtils.JoinValid('\n', sendToSender.Message, sendToOthers.Message));
         }
 
-        return new Result<ChatPacket>(true, chat);
-    }
-
-    private Result<ChatPacket> SendGlobalBroadcast(ChatPacket chat, Session sender)
-    {
-        var message = new ChatMessage((int)chat.Channel, sender, null, chat.Value);
-        var messageToSender = new TextPacket(chat.Channel, _formatter.Format("{:L:Chat.Format.Self}", message));
-        var messageToOthers = new TextPacket(chat.Channel, _formatter.Format("{:L:Chat.Format.Other}", message));
-
-        Result sendToSender = _protocol.Send(messageToSender, sender);
-        Result sendToOthers = _protocol.Send(messageToOthers, new Except<Session>(sender));
-        if (!sendToSender || !sendToOthers)
-        {
-            return new Result<ChatPacket>(false, chat, StringUtils.JoinValid('\n', sendToSender.Message, sendToOthers.Message));
-        }
-
-        return new Result<ChatPacket>(true, chat);
+        return new Result(true);
     }
 }

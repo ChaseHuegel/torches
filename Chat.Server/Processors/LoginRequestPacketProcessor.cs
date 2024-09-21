@@ -11,11 +11,12 @@ using Packets.Chat;
 namespace Chat.Server.Processors;
 
 public class LoginRequestPacketProcessor(
+    ChatMessenger chat,
     SmartFormatter formatter,
     ILoginService loginService,
     IPacketProtocol protocol,
     ILogger logger
-) : PacketProcessor<LoginRequestPacket>(formatter, loginService, protocol, logger)
+) : PacketProcessor<LoginRequestPacket>(chat, formatter, loginService, protocol, logger)
 {
     protected override bool AuthRequired => false;
 
@@ -54,10 +55,8 @@ public class LoginRequestPacketProcessor(
 
         _logger.LogInformation("Login from {sender} accepted.", e.Sender);
 
-        var message = new ChatMessage((int)ChatChannel.System, default, e.Sender, _formatter.Format("{:L:Notifications.UserLoggedIn}", e.Sender));
-        var messageToOthers = new TextPacket(ChatChannel.System, _formatter.Format("{:L:Chat.Format.Other}", message));
-        sendResult = _protocol.Send(messageToOthers, new Except<Session>(e.Sender));
-        if (!sendResult)
+        Result notifyOthers = _chat.Broadcast(ChatChannel.System, _formatter.Format("{:L:Notifications.UserLoggedIn}", e.Sender), new Except<Session>(e.Sender));
+        if (!notifyOthers)
         {
             _logger.LogError("Failed to notify other users of a login.\n{Message}", sendResult.Message);
         }
