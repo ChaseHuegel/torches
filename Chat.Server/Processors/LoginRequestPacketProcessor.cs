@@ -1,9 +1,9 @@
+using Chat.Server.IO;
 using Chat.Server.Types;
 using Library.Collections;
 using Library.Types;
 using Library.Util;
 using Networking.Events;
-using Networking.LowLevel;
 using Networking.Services;
 using Packets.Auth;
 using Packets.Chat;
@@ -13,9 +13,9 @@ namespace Chat.Server.Processors;
 public class LoginRequestPacketProcessor(
     SmartFormatter formatter,
     ILoginService loginService,
-    IDataSender sender,
+    IPacketProtocol protocol,
     ILogger logger
-) : PacketProcessor<LoginRequestPacket>(formatter, loginService, sender, logger)
+) : PacketProcessor<LoginRequestPacket>(formatter, loginService, protocol, logger)
 {
     protected override bool AuthRequired => false;
 
@@ -45,7 +45,7 @@ public class LoginRequestPacketProcessor(
             loginResponse = new LoginResponsePacket(true, _formatter.Format("{:L:Auth.Login.Success}"));
         }
 
-        Result sendResult = SendLoginResponse(loginResponse, e.Sender);
+        Result sendResult = _protocol.Send(loginResponse, e.Sender);
         if (!sendResult)
         {
             _logger.LogError("Failed to send a login response to {Sender}.\n{Message}", e.Sender, sendResult.Message);
@@ -56,18 +56,12 @@ public class LoginRequestPacketProcessor(
 
         var message = new ChatMessage((int)ChatChannel.System, default, e.Sender, _formatter.Format("{:L:Notifications.UserLoggedIn}", e.Sender));
         var messageToOthers = new TextPacket(ChatChannel.System, _formatter.Format("{:L:Chat.Format.Other}", message));
-        sendResult = SendTextMessage(messageToOthers, new Except<Session>(e.Sender));
+        sendResult = _protocol.Send(messageToOthers, new Except<Session>(e.Sender));
         if (!sendResult)
         {
             _logger.LogError("Failed to notify other users of a login.\n{Message}", sendResult.Message);
         }
 
         return new Result<EventBehavior>(true, EventBehavior.Continue);
-    }
-
-    private Result SendLoginResponse(LoginResponsePacket loginResponse, Session target)
-    {
-        var packet = new Packet(PacketType.LoginResponse, 1, loginResponse.Serialize());
-        return _sender.Send(packet.Serialize(), target);
     }
 }

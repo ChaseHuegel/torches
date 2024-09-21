@@ -1,10 +1,10 @@
+using Chat.Server.IO;
 using Chat.Server.Types;
 using Library.Collections;
 using Library.Types;
 using Library.Util;
 using Networking;
 using Networking.Events;
-using Networking.LowLevel;
 using Networking.Services;
 using Packets.Chat;
 
@@ -14,9 +14,9 @@ public class ChatPacketProcessor(
     SmartFormatter formatter,
     SessionService sessionService,
     ILoginService loginService,
-    IDataSender sender,
+    IPacketProtocol protocol,
     ILogger logger
-) : PacketProcessor<ChatPacket>(formatter, loginService, sender, logger)
+) : PacketProcessor<ChatPacket>(formatter, loginService, protocol, logger)
 {
     private readonly SessionService _sessionService = sessionService;
 
@@ -70,8 +70,8 @@ public class ChatPacketProcessor(
         var messageToSender = new TextPacket(chat.Channel, _formatter.Format("{:L:Chat.Format.Self}", message));
         var messageToTarget = new TextPacket(chat.Channel, _formatter.Format("{:L:Chat.Format.Other}", message));
 
-        Result sendToSender = SendTextMessage(messageToSender, sender);
-        Result sendToTarget = SendTextMessage(messageToTarget, target);
+        Result sendToSender = _protocol.Send(messageToSender, sender);
+        Result sendToTarget = _protocol.Send(messageToTarget, target);
         if (!sendToSender || !sendToTarget)
         {
             return new Result<ChatPacket>(false, chat, StringUtils.JoinValid('\n', sendToSender.Message, sendToTarget.Message));
@@ -86,9 +86,9 @@ public class ChatPacketProcessor(
         var messageToSender = new TextPacket(chat.Channel, _formatter.Format("{:L:Chat.Format.Self}", message));
         var messageToOthers = new TextPacket(chat.Channel, _formatter.Format("{:L:Chat.Format.Other}", message));
 
-        Result sendToSender = SendTextMessage(messageToSender, sender);
+        Result sendToSender = _protocol.Send(messageToSender, sender);
         //  TODO identify local targets
-        Result sendToOthers = SendTextMessage(messageToOthers, new Except<Session>(sender));
+        Result sendToOthers = _protocol.Send(messageToOthers, new Except<Session>(sender));
         if (!sendToSender || !sendToOthers)
         {
             return new Result<ChatPacket>(false, chat, StringUtils.JoinValid('\n', sendToSender.Message, sendToOthers.Message));
@@ -103,8 +103,8 @@ public class ChatPacketProcessor(
         var messageToSender = new TextPacket(chat.Channel, _formatter.Format("{:L:Chat.Format.Self}", message));
         var messageToOthers = new TextPacket(chat.Channel, _formatter.Format("{:L:Chat.Format.Other}", message));
 
-        Result sendToSender = SendTextMessage(messageToSender, sender);
-        Result sendToOthers = SendTextMessage(messageToOthers, new Except<Session>(sender));
+        Result sendToSender = _protocol.Send(messageToSender, sender);
+        Result sendToOthers = _protocol.Send(messageToOthers, new Except<Session>(sender));
         if (!sendToSender || !sendToOthers)
         {
             return new Result<ChatPacket>(false, chat, StringUtils.JoinValid('\n', sendToSender.Message, sendToOthers.Message));
