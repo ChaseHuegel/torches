@@ -27,7 +27,7 @@ public class LoginCommand(IDataSender sender, PacketConsumer<LoginResponsePacket
             return CommandState.Failure;
         }
 
-        var packet = new Packet(PacketType.LoginRequest, new LoginRequestPacket(1, token).Serialize());
+        var packet = new Packet(PacketType.LoginRequest, 1, new LoginRequestPacket(token).Serialize());
         var loginResponseAwaiter = _loginResponseConsumer.GetPacketAwaiter();
 
         _sender.Send(packet.Serialize(), new All<Session>());

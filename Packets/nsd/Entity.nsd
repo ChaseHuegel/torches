@@ -3,7 +3,6 @@
 
 message EntityPacket
 {
-    byte Version;
     int ID;
     string Name;
     Position Position;

@@ -44,7 +44,7 @@ public class FormattingTests : TestBase
         Session sender = sessionService.RequestNew().Value;
         Session target = sessionService.RequestNew().Value;
 
-        var chatPacket = new ChatPacket(0, ChatChannel.Whisper, target.ID, message);
+        var chatPacket = new ChatPacket(ChatChannel.Whisper, target.ID, message);
         var chatMessage = new ChatMessage((int)chatPacket.Channel, sender, target, chatPacket.Value);
 
         string formattedSelf = Smart.Format("{:L:Chat.Format.Self}", chatMessage);

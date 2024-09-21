@@ -33,7 +33,7 @@ public class ChatPacketProcessor(
         {
             var message = new ChatMessage((int)ChatChannel.System, new Session(), e.Sender, _formatter.Format("{:L:Auth.Login.LoginRequired}"));
             var text = _formatter.Format("{:L:Chat.Format.Self}", message);
-            Result sendResult = SendTextMessage(new TextPacket(1, ChatChannel.System, text), e.Sender);
+            Result sendResult = SendTextMessage(new TextPacket(ChatChannel.System, text), e.Sender);
             if (!sendResult)
             {
                 _logger.LogError("Failed to send a message to {Sender}.\n{Message}", e.Sender, sendResult.Message);
@@ -87,8 +87,8 @@ public class ChatPacketProcessor(
         }
 
         var message = new ChatMessage((int)chat.Channel, sender, target, chat.Value);
-        var messageToSender = new TextPacket(1, chat.Channel, _formatter.Format("{:L:Chat.Format.Self}", message));
-        var messageToTarget = new TextPacket(1, chat.Channel, _formatter.Format("{:L:Chat.Format.Other}", message));
+        var messageToSender = new TextPacket(chat.Channel, _formatter.Format("{:L:Chat.Format.Self}", message));
+        var messageToTarget = new TextPacket(chat.Channel, _formatter.Format("{:L:Chat.Format.Other}", message));
 
         Result sendToSender = SendTextMessage(messageToSender, sender);
         Result sendToTarget = SendTextMessage(messageToTarget, target);
@@ -103,8 +103,8 @@ public class ChatPacketProcessor(
     private Result<ChatPacket> SendLocalBroadcast(ChatPacket chat, Session sender)
     {
         var message = new ChatMessage((int)chat.Channel, sender, null, chat.Value);
-        var messageToSender = new TextPacket(1, chat.Channel, _formatter.Format("{:L:Chat.Format.Self}", message));
-        var messageToOthers = new TextPacket(1, chat.Channel, _formatter.Format("{:L:Chat.Format.Other}", message));
+        var messageToSender = new TextPacket(chat.Channel, _formatter.Format("{:L:Chat.Format.Self}", message));
+        var messageToOthers = new TextPacket(chat.Channel, _formatter.Format("{:L:Chat.Format.Other}", message));
 
         Result sendToSender = SendTextMessage(messageToSender, sender);
         //  TODO identify local targets
@@ -120,8 +120,8 @@ public class ChatPacketProcessor(
     private Result<ChatPacket> SendGlobalBroadcast(ChatPacket chat, Session sender)
     {
         var message = new ChatMessage((int)chat.Channel, sender, null, chat.Value);
-        var messageToSender = new TextPacket(1, chat.Channel, _formatter.Format("{:L:Chat.Format.Self}", message));
-        var messageToOthers = new TextPacket(1, chat.Channel, _formatter.Format("{:L:Chat.Format.Other}", message));
+        var messageToSender = new TextPacket(chat.Channel, _formatter.Format("{:L:Chat.Format.Self}", message));
+        var messageToOthers = new TextPacket(chat.Channel, _formatter.Format("{:L:Chat.Format.Other}", message));
 
         Result sendToSender = SendTextMessage(messageToSender, sender);
         Result sendToOthers = SendTextMessage(messageToOthers, new Except<Session>(sender));
@@ -135,13 +135,13 @@ public class ChatPacketProcessor(
 
     private Result SendTextMessage(TextPacket text, Session target)
     {
-        var packet = new Packet(PacketType.Text, text.Serialize());
+        var packet = new Packet(PacketType.Text, 1, text.Serialize());
         return _sender.Send(packet.Serialize(), target);
     }
 
     private Result SendTextMessage(TextPacket text, IFilter<Session> filter)
     {
-        var packet = new Packet(PacketType.Text, text.Serialize());
+        var packet = new Packet(PacketType.Text, 1, text.Serialize());
         return _sender.Send(packet.Serialize(), new Where<Session>(session => filter.Allowed(session) && _loginService.IsLoggedIn(session)));
     }
 }

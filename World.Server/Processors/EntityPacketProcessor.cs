@@ -30,7 +30,7 @@ public class EntityPacketProcessor(ILogger logger, IDataSender sender, ECSContex
 
     private Result SendEntityPacket(EntityPacket entity, IFilter<Session> filter)
     {
-        var packet = new Packet(PacketType.Entity, entity.Serialize());
+        var packet = new Packet(PacketType.Entity, 1, entity.Serialize());
         return _sender.Send(packet.Serialize(), filter);
     }
 }

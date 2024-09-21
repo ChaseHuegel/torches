@@ -31,7 +31,7 @@ public class LogoutPacketProcessor(
         {
             message = new ChatMessage((int)ChatChannel.System, new Session(), e.Sender, _formatter.Format("{:L:Auth.Login.LoginRequired}"));
             string text = _formatter.Format("{:L:Chat.Format.Self}", message);
-            Result sendLoginRequired = SendTextMessage(new TextPacket(1, ChatChannel.System, text), e.Sender);
+            Result sendLoginRequired = SendTextMessage(new TextPacket(ChatChannel.System, text), e.Sender);
             if (!sendLoginRequired)
             {
                 _logger.LogError("Failed to send a message to {Sender}.\n{Message}", e.Sender, sendLoginRequired.Message);
@@ -53,7 +53,7 @@ public class LogoutPacketProcessor(
         _logger.LogInformation("Logout from {Sender} accepted.", e.Sender);
 
         message = new ChatMessage((int)ChatChannel.System, default, e.Sender, _formatter.Format("{:L:Notifications.UserLoggedOut}", e.Sender));
-        var messageToOthers = new TextPacket(1, ChatChannel.System, _formatter.Format("{:L:Chat.Format.Other}", message));
+        var messageToOthers = new TextPacket(ChatChannel.System, _formatter.Format("{:L:Chat.Format.Other}", message));
         Result sendLoggedOut = SendTextMessage(messageToOthers, new Except<Session>(e.Sender));
         if (!sendLoggedOut)
         {
@@ -65,13 +65,13 @@ public class LogoutPacketProcessor(
 
     private Result SendTextMessage(TextPacket text, Session target)
     {
-        var packet = new Packet(PacketType.Text, text.Serialize());
+        var packet = new Packet(PacketType.Text, 1, text.Serialize());
         return _sender.Send(packet.Serialize(), target);
     }
 
     private Result SendTextMessage(TextPacket text, IFilter<Session> filter)
     {
-        var packet = new Packet(PacketType.Text, text.Serialize());
+        var packet = new Packet(PacketType.Text, 1, text.Serialize());
         return _sender.Send(packet.Serialize(), new Where<Session>(session => filter.Allowed(session) && _loginService.IsLoggedIn(session)));
     }
 }

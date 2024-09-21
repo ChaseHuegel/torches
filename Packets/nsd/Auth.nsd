@@ -3,18 +3,15 @@
 
 message LoginRequestPacket
 {
-    byte Version;
     string Token;
 }
 
 message LoginResponsePacket
 {
-    byte Version;
     bool Success;
     string? Message;
 }
 
 message LogoutPacket
 {
-    byte Version;
 }

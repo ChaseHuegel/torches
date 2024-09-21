@@ -18,7 +18,7 @@ public class LogoutCommand(IDataSender sender) : Command
 
     protected override Task<CommandState> InvokeAsync(ReadOnlyQueue<string> args)
     {
-        var packet = new Packet(PacketType.Logout, new LogoutPacket(1).Serialize());
+        var packet = new Packet(PacketType.Logout, 1, new LogoutPacket().Serialize());
         _sender.Send(packet.Serialize(), new All<Session>());
 
         return Task.FromResult(CommandState.Success);

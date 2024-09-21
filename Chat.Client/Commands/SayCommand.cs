@@ -26,7 +26,7 @@ public class SayCommand(IDataSender sender) : Command
         }
 
         //  TODO need to introduce a PacketProducer<T> based on MessageProducer<T> that allows doing a simplified Send(new ChatPacket()).
-        var packet = new Packet(PacketType.Chat, new ChatPacket(1, ChatChannel.Local, 0, message).Serialize());
+        var packet = new Packet(PacketType.Chat, 1, new ChatPacket(ChatChannel.Local, 0, message).Serialize());
         _sender.Send(packet.Serialize(), new All<Session>());
 
         return Task.FromResult(CommandState.Success);

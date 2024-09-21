@@ -49,14 +49,14 @@ public class MoveCommand(IDataSender sender, ECSContext ecs) : Command
                 return Task.FromResult(CommandState.Failure);
         }
 
-        var entityPacket = new EntityPacket(1, entity, identifierComponent.Value.Name ?? $"Entity {entity}", position, 0f);
+        var entityPacket = new EntityPacket(entity, identifierComponent.Value.Name ?? $"Entity {entity}", position, 0f);
         SendEntityPacket(entityPacket, new All<Session>());
         return Task.FromResult(CommandState.Success);
     }
 
     private Result SendEntityPacket(EntityPacket entity, IFilter<Session> filter)
     {
-        var packet = new Packet(PacketType.Entity, entity.Serialize());
+        var packet = new Packet(PacketType.Entity, 1, entity.Serialize());
         return _sender.Send(packet.Serialize(), filter);
     }
 }

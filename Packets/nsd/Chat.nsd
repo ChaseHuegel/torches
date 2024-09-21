@@ -13,7 +13,6 @@ enum ChatChannel
 
 message ChatPacket
 {
-    byte Version;
     ChatChannel Channel;
     uint? DestinationID;
     string Value;
@@ -21,7 +20,6 @@ message ChatPacket
 
 message TextPacket
 {
-    byte Version;
     ChatChannel Channel;
     string Value;
 }
