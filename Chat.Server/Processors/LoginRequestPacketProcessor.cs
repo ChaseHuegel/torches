@@ -1,6 +1,5 @@
 using Chat.Server.Types;
 using Library.Collections;
-using Library.Events;
 using Library.Types;
 using Library.Util;
 using Networking.Events;
@@ -16,14 +15,11 @@ public class LoginRequestPacketProcessor(
     ILoginService loginService,
     IDataSender sender,
     ILogger logger
-) : IEventProcessor<MessageEventArgs<LoginRequestPacket>>
+) : PacketProcessor<LoginRequestPacket>(formatter, loginService, sender, logger)
 {
-    private readonly SmartFormatter _formatter = formatter;
-    private readonly ILoginService _loginService = loginService;
-    private readonly IDataSender _sender = sender;
-    private readonly ILogger _logger = logger;
+    protected override bool AuthRequired => false;
 
-    public Result<EventBehavior> ProcessEvent(object? sender, MessageEventArgs<LoginRequestPacket> e)
+    protected override Result<EventBehavior> ProcessPacket(MessageEventArgs<LoginRequestPacket> e)
     {
         LoginRequestPacket loginRequest = e.Message;
         _logger.LogInformation("Login requested by {sender}.", e.Sender);
@@ -73,11 +69,5 @@ public class LoginRequestPacketProcessor(
     {
         var packet = new Packet(PacketType.LoginResponse, 1, loginResponse.Serialize());
         return _sender.Send(packet.Serialize(), target);
-    }
-
-    private Result SendTextMessage(TextPacket text, IFilter<Session> filter)
-    {
-        var packet = new Packet(PacketType.Text, 1, text.Serialize());
-        return _sender.Send(packet.Serialize(), new Where<Session>(session => filter.Allowed(session) && _loginService.IsLoggedIn(session)));
     }
 }

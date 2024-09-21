@@ -1,6 +1,5 @@
 using Chat.Server.Types;
 using Library.Collections;
-using Library.Events;
 using Library.Types;
 using Library.Util;
 using Networking;
@@ -17,32 +16,13 @@ public class ChatPacketProcessor(
     ILoginService loginService,
     IDataSender sender,
     ILogger logger
-) : IEventProcessor<MessageEventArgs<ChatPacket>>
+) : PacketProcessor<ChatPacket>(formatter, loginService, sender, logger)
 {
-    private readonly SmartFormatter _formatter = formatter;
     private readonly SessionService _sessionService = sessionService;
-    private readonly ILoginService _loginService = loginService;
-    private readonly IDataSender _sender = sender;
-    private readonly ILogger _logger = logger;
 
-    public Result<EventBehavior> ProcessEvent(object? sender, MessageEventArgs<ChatPacket> e)
+    protected override Result<EventBehavior> ProcessPacket(MessageEventArgs<ChatPacket> e)
     {
         ChatPacket chat = e.Message;
-
-        if (!_loginService.IsLoggedIn(e.Sender))
-        {
-            var message = new ChatMessage((int)ChatChannel.System, new Session(), e.Sender, _formatter.Format("{:L:Auth.Login.LoginRequired}"));
-            var text = _formatter.Format("{:L:Chat.Format.Self}", message);
-            Result sendResult = SendTextMessage(new TextPacket(ChatChannel.System, text), e.Sender);
-            if (!sendResult)
-            {
-                _logger.LogError("Failed to send a message to {Sender}.\n{Message}", e.Sender, sendResult.Message);
-                return new Result<EventBehavior>(false, EventBehavior.Continue, sendResult.Message);
-            }
-
-            return new Result<EventBehavior>(false, EventBehavior.Continue, "User is not logged in.");
-        }
-
         _logger.LogInformation("Recv chat on channel: {Channel}, from: {Sender}, to: {DestinationID}, value: \"{Value}\"", chat.Channel, e.Sender, chat.DestinationID, chat.Value);
 
         Result<ChatPacket> relayResult = RelayChatAsText(chat, e.Sender);
@@ -131,17 +111,5 @@ public class ChatPacketProcessor(
         }
 
         return new Result<ChatPacket>(true, chat);
-    }
-
-    private Result SendTextMessage(TextPacket text, Session target)
-    {
-        var packet = new Packet(PacketType.Text, 1, text.Serialize());
-        return _sender.Send(packet.Serialize(), target);
-    }
-
-    private Result SendTextMessage(TextPacket text, IFilter<Session> filter)
-    {
-        var packet = new Packet(PacketType.Text, 1, text.Serialize());
-        return _sender.Send(packet.Serialize(), new Where<Session>(session => filter.Allowed(session) && _loginService.IsLoggedIn(session)));
     }
 }
