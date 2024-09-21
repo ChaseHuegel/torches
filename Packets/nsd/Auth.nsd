@@ -14,4 +14,5 @@ message LoginResponsePacket
 
 message LogoutPacket
 {
+    string Token;
 }
