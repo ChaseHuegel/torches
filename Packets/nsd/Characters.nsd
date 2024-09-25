@@ -1,0 +1,53 @@
+#version 1.0;
+#namespace Packets.Auth;
+
+message JoinWorldRequestPacket
+{
+    string CharacterUID;
+}
+
+message JoinWorldResponsePacket
+{
+    bool Success;
+    string? Message;
+}
+
+message CharacterCreationRequestPacket
+{
+    string Name;
+    byte ClassID;
+    CharacterCustomizations Customizations;
+}
+
+message CharacterCreationResponsePacket
+{
+    bool Success;
+    string? Message;
+}
+
+message CharacterPacket
+{
+    string UID;
+    string Name;
+    string Title;
+    byte ClassID;
+    CharacterCustomizations Customizations;
+}
+
+message CharacterListPacket
+{
+    CharacterListEntry[] Characters;
+}
+
+message CharacterListEntry
+{
+    string Location;
+    string Activity;
+    CharacterPacket Character;
+}
+
+message CharacterCustomizations
+{
+    byte Gender;
+    byte OriginID;
+}
