@@ -5,6 +5,7 @@ using Networking.Messaging;
 using Packets.Auth;
 using Packets.Chat;
 using Packets.Entities;
+using Packets.World;
 
 namespace Networking.DependencyInjection;
 
@@ -18,6 +19,9 @@ public sealed class PacketRegistry : IDryIocModule
         RegisterPacketHandling(typeof(LoginRequestPacket), container);
         RegisterPacketHandling(typeof(LoginResponsePacket), container);
         RegisterPacketHandling(typeof(LogoutPacket), container);
+        RegisterPacketHandling(typeof(JoinRequestPacket), container);
+        RegisterPacketHandling(typeof(JoinResponsePacket), container);
+        RegisterPacketHandling(typeof(CharacterPacket), container);
     }
 
     private static void RegisterPacketHandling(Type packetType, IContainer container)

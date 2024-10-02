@@ -15,3 +15,18 @@ message Position
     float Y;
     float Z;
 }
+
+message CharacterPacket
+{
+    string UID;
+    string Name;
+    string Title;
+    byte ClassID;
+    CharacterCustomizations Customizations;
+}
+
+message CharacterCustomizations
+{
+    byte Gender;
+    byte OriginID;
+}

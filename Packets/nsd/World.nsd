@@ -1,0 +1,13 @@
+#version 1.0;
+#namespace Packets.World;
+
+message JoinRequestPacket
+{
+    string CharacterUID;
+}
+
+message JoinResponsePacket
+{
+    bool Success;
+    string? Message;
+}
