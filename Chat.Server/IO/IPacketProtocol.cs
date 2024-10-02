@@ -4,6 +4,7 @@ using Library.Util;
 using Packets.Auth;
 using Packets.Chat;
 using Packets.Entities;
+using Packets.World;
 
 namespace Chat.Server.IO;
 
@@ -28,4 +29,13 @@ public interface IPacketProtocol
 
     Result Send(LogoutPacket message, Session target);
     Result Send(LogoutPacket message, IFilter<Session> filter);
+
+    Result Send(JoinRequestPacket message, Session target);
+    Result Send(JoinRequestPacket  message, IFilter<Session> filter);
+
+    Result Send(JoinResponsePacket message, Session target);
+    Result Send(JoinResponsePacket message, IFilter<Session> filter);
+
+    Result Send(CharacterPacket message, Session target);
+    Result Send(CharacterPacket message, IFilter<Session> filter);
 }

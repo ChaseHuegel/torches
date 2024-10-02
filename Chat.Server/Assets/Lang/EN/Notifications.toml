@@ -1,5 +1,7 @@
 "Language" = "en"
 
 [Translations]
-"Notifications.UserLoggedIn" = "{0} has joined."
-"Notifications.UserLoggedOut" = "{0} has left."
+"Notifications.UserLoggedIn" = "{0} has logged in."
+"Notifications.UserLoggedOut" = "{0} has logged out."
+"Notifications.CharacterJoined" = "{0} has joined."
+"Notifications.CharacterLeft" = "{0} has left."

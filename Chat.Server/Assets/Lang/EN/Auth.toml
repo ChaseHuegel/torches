@@ -6,3 +6,4 @@
 "Auth.Login.AlreadyLoggedIn" = "Account is already logged in."
 "Auth.Login.Failed" = "There was an issue logging in."
 "Auth.Login.LoginRequired" = "You are not logged in."
+"Auth.Join.Success" = "Joined successfully."

@@ -6,6 +6,7 @@ using Networking.Services;
 using Packets.Auth;
 using Packets.Chat;
 using Packets.Entities;
+using Packets.World;
 
 namespace Chat.Server.IO;
 
@@ -102,6 +103,42 @@ public class PacketProtocolRev1(ILoginService loginService, IDataSender sender) 
     public Result Send(LogoutPacket message, IFilter<Session> filter)
     {
         var packet = new Packet(PacketType.Logout, 1, message.Serialize());
+        return InternalSend(packet, filter);
+    }
+
+    public Result Send(JoinRequestPacket message, Session target)
+    {
+        var packet = new Packet(PacketType.JoinRequest, 1, message.Serialize());
+        return InternalSend(packet, target);
+    }
+
+    public Result Send(JoinRequestPacket message, IFilter<Session> filter)
+    {
+        var packet = new Packet(PacketType.JoinRequest, 1, message.Serialize());
+        return InternalSend(packet, filter);
+    }
+
+    public Result Send(JoinResponsePacket message, Session target)
+    {
+        var packet = new Packet(PacketType.JoinResponse, 1, message.Serialize());
+        return InternalSend(packet, target);
+    }
+
+    public Result Send(JoinResponsePacket message, IFilter<Session> filter)
+    {
+        var packet = new Packet(PacketType.JoinResponse, 1, message.Serialize());
+        return InternalSend(packet, filter);
+    }
+
+    public Result Send(CharacterPacket message, Session target)
+    {
+        var packet = new Packet(PacketType.Character, 1, message.Serialize());
+        return InternalSend(packet, target);
+    }
+
+    public Result Send(CharacterPacket message, IFilter<Session> filter)
+    {
+        var packet = new Packet(PacketType.Character, 1, message.Serialize());
         return InternalSend(packet, filter);
     }
 }

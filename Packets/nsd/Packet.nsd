@@ -17,4 +17,7 @@ enum PacketType
     LoginRequest    = 300;
     LoginResponse   = 301;
     Logout          = 302;
+    JoinRequest     = 400;
+    JoinResponse    = 401;
+    Character       = 402;
 }
