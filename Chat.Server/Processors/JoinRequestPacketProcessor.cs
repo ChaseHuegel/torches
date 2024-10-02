@@ -1,11 +1,9 @@
 using Chat.Server.IO;
-using Chat.Server.Types;
 using Library.Collections;
 using Library.Types;
 using Library.Util;
 using Networking.Events;
 using Networking.Services;
-using Packets.Auth;
 using Packets.Chat;
 using Packets.Entities;
 using Packets.World;

@@ -3,7 +3,6 @@ using Library.Types;
 using Networking.LowLevel;
 using Networking.Messaging;
 using Packets;
-using Packets.Auth;
 using Packets.World;
 using Swordfish.Library.Collections;
 using Swordfish.Library.IO;
